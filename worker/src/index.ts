@@ -35,34 +35,47 @@ const API_BASE = 'https://models.github.ai/inference'
 /** Per-model timeout in ms. Workers have 30 s wall-clock; leave room for ≥2 attempts. */
 const MODEL_TIMEOUT_MS = 22_000
 
-const SYSTEM_PROMPT = `You are a pixel art generator. Given a creature or object name, output ONLY valid JSON (no markdown, no explanation, no code fences) as a 20×20 animated sprite.
+const SYSTEM_PROMPT = `You are an expert pixel artist. Given a subject, create a recognisable 20×20 animated sprite.
 
-Use a compact palette-indexed format to save tokens:
+CRITICAL: YOU MUST CREATE 6 DIFFERENT FRAMES WITH VISIBLE ANIMATION. DO NOT REPEAT THE SAME FRAME.
+
+Format (palette-indexed to save tokens):
 
 {
-  "palette": ["#colour0", "#colour1", "#colour2", ...up to 10 colours],
+  "palette": ["#colour0", "#colour1", ...up to 10 colours],
   "frames": [
-    ["..1122..............", "..1331..............", ...20 strings of 20 chars each],
-    ...6 frames total
+    ["..1122..............", "..1331..............", ...20 strings of 20 chars],
+    ...6 DIFFERENT frames
   ],
   "primaryColour": "#hexhex"
 }
 
-Rules:
-- "palette" is an array of up to 10 hex colour strings (e.g. "#FF8800")
-- Each frame is an array of 20 strings, each exactly 20 characters long
-- Each character is either a digit 0-9 indexing into the palette, or "." for transparent
-- Frame 1: neutral/idle pose
-- Frame 2: beginning of movement
-- Frame 3: mid movement (e.g. legs shift, arms move, tail wag)
-- Frame 4: peak of movement
-- Frame 5: returning from peak
-- Frame 6: settling back to idle (smooth transition back to frame 1)
-- The frames should create a smooth looping animation when cycled 1→2→3→4→5→6→1
-- Use realistic colours for the subject
-- Keep the design simple and recognisable — classic pixel art style
-- Centre the subject in the grid with some transparent border
-- ONLY output the JSON object, nothing else`
+Each frame: 20 strings of 20 chars. Each char: digit 0-9 (palette index) or "." (transparent).
+
+ANIMATION IS MANDATORY - each frame must show the subject in a DIFFERENT POSITION OR POSE:
+- Frame 1: neutral stance
+- Frame 2: start moving (shift weight, lean, eyes blink)
+- Frame 3: mid-motion (arms/legs/body clearly displaced from frame 1)
+- Frame 4: maximum motion (furthest from neutral)
+- Frame 5: returning (different from all previous frames)
+- Frame 6: almost back to neutral (transitions to frame 1)
+
+Example animations:
+- Cactus: slight sway left → lean further left → return centre → lean right → lean further right → return centre
+- Character: idle → lean forward → step forward → peak of step → pull back leg → settle back
+- Animal: sit → ears perk → start standing → fully standing → lowering → sitting again
+
+REQUIREMENTS:
+- Create a CLEAR, RECOGNISABLE shape (not just a rectangle)
+- Use realistic colours appropriate to the subject
+- Centre subject with 2-4 pixel border
+- Make defining features obvious (eyes, limbs, spines, etc.)
+- Show volume with shading
+- Think classic SNES/Game Boy pixel art
+
+Verify: Are all 6 frames visibly different? If not, revise them.
+
+Output ONLY the JSON.`
 
 /**
  * Try each model in the queue until one returns valid pixel frames.

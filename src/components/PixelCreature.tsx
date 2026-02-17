@@ -19,16 +19,22 @@ export default function PixelCreature({ creature, size = 5, phaseOffset = 0 }: P
   useEffect(() => {
     if (frameCount <= 1) return
 
+    let mounted = true
+    let interval: ReturnType<typeof setInterval>
+
     // Stagger start based on phaseOffset
     const delay = setTimeout(() => {
-      const interval = setInterval(() => {
+      if (!mounted) return
+      interval = setInterval(() => {
         setFrameIndex(prev => (prev + 1) % frameCount)
       }, 250) // 4 FPS — smooth enough for pixel art, charming tempo
-
-      return () => clearInterval(interval)
     }, phaseOffset * 60) // slight stagger between pods
 
-    return () => clearTimeout(delay)
+    return () => {
+      mounted = false
+      clearTimeout(delay)
+      if (interval) clearInterval(interval)
+    }
   }, [frameCount, phaseOffset])
 
   const frame = creature.frames[frameIndex] || creature.frames[0]
