@@ -1,2 +1,4 @@
 cv_refs/
 node_modules/
+.env
+package-lock.json
