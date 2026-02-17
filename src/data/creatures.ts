@@ -19,7 +19,7 @@ function v(x: number, y: number, z: number, color: string): Voxel {
   return { x, y, z, color }
 }
 
-/* mirror on Z axis around center=4 (for bilateral symmetry) */
+/* mirror on Z axis around centre=4 (for bilateral symmetry) */
 function mirror(voxels: Voxel[]): Voxel[] {
   const extra: Voxel[] = []
   for (const vx of voxels) {

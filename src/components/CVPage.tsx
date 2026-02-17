@@ -74,18 +74,18 @@ const SPRITES: Record<string, { grid: Sprite; label: string }> = {
   },
   /* mortarboard — for "Education" */
   grad: {
-    label: 'graduation cap',
+    label: 'mortarboard',
     grid: [
       [null,    null,    null,    null,    null,    null,    null,    null,    null,    null   ],
-      [null,    null,    null,    null,    '#333',  null,    null,    null,    null,    null   ],
+      [null,    null,    null,    null,    '#333',  '#333',  null,    null,    null,    null   ],
       [null,    '#333',  '#333',  '#333',  '#333',  '#333',  '#333',  '#333',  '#333',  null   ],
       ['#333',  '#333',  '#333',  '#333',  '#333',  '#333',  '#333',  '#333',  '#333',  '#333' ],
       [null,    null,    '#444',  '#444',  '#444',  '#444',  '#444',  '#444',  null,    null   ],
       [null,    null,    '#444',  '#444',  '#444',  '#444',  '#444',  '#444',  null,    null   ],
       [null,    null,    null,    '#444',  '#444',  '#444',  '#444',  null,    null,    null   ],
-      [null,    null,    null,    null,    '#FFCC00',null,   null,    null,    null,    null   ],
-      [null,    null,    null,    null,    '#FFCC00',null,   null,    null,    null,    null   ],
-      [null,    null,    null,    '#FFCC00','#FFCC00','#FFCC00',null,  null,    null,    null   ],
+      [null,    null,    null,    null,    '#FFCC00','#FFCC00',null,   null,    null,    null   ],
+      [null,    null,    null,    null,    '#FFCC00','#FFCC00',null,   null,    null,    null   ],
+      [null,    null,    null,    '#FFCC00','#FFCC00','#FFCC00','#FFCC00',null, null,    null   ],
     ],
   },
   /* speech bubble — for "Manager quotes" */

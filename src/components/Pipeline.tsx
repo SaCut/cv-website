@@ -28,14 +28,14 @@ function makeLogs(stageId: string, config: DeployConfig): string[] {
       `> docker build -t creature-registry/${n.toLowerCase().replace(/\s+/g, '-')}:latest .`,
       `> Step 1/4 : FROM voxel-base:alpine`,
       `> Step 2/4 : COPY creature.json /app/`,
-      `> Step 3/4 : RUN generate-voxels --optimize`,
+      `> Step 3/4 : RUN generate-voxels --optimise`,
       `> Step 4/4 : HEALTHCHECK --interval=30s`,
       `> Image built successfully ✓`,
     ]
     case 'test': return [
       `> Running creature unit tests...`,
       `> ✓ test_has_enough_voxels (2ms)`,
-      `> ✓ test_colors_are_valid (1ms)`,
+      `> ✓ test_colours_are_valid (1ms)`,
       `> ✓ test_creature_is_adorable (3ms)`,
       `> ✓ test_no_voxel_overflow (1ms)`,
       `> All 4 tests passed ✓`,

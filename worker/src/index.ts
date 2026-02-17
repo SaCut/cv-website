@@ -30,7 +30,7 @@ Rules:
 - Max 150 voxels
 - Coordinates 0-15 for x, y, z
 - y=0 is ground level
-- Use realistic colors
+- Use realistic colours
 - Make it recognisable but simple
 - Be creative with the shape`
 
