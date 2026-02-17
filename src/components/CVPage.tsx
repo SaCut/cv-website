@@ -285,7 +285,7 @@ export default function CVPage({ onBack }: Props) {
                   <h3>ASOS.com</h3>
                   <span className="cv-role-title">Test Automation &amp; Platform Engineer</span>
                 </div>
-                <span className="cv-role-when">Jun 2023 – Present</span>
+                <span className="cv-role-when">Jun 2023 - Present</span>
               </div>
               <p>
                 Platform and infrastructure engineering for one of the UK's largest
@@ -308,7 +308,7 @@ export default function CVPage({ onBack }: Props) {
                   <h3>ASOS.com <span className="cv-via">via Sparta Global</span></h3>
                   <span className="cv-role-title">DevOps Consultant</span>
                 </div>
-                <span className="cv-role-when">Jun 2021 – Jun 2023</span>
+                <span className="cv-role-when">Jun 2021 - Jun 2023</span>
               </div>
               <p>
                 Supported automated testing and environment health across integrated
@@ -318,7 +318,7 @@ export default function CVPage({ onBack }: Props) {
               <ul>
                 <li>Built and maintained Agradash, a React dashboard backed by ElasticSearch — 3,000+ views from 90 users, cutting root cause analysis time from hours to roughly 30 minutes.</li>
                 <li>Wrote Node.js/TypeScript backend functions for data aggregation, live service status, and environment availability metrics.</li>
-                <li>Designed a heuristics-based alerting system from scratch — Teams notifications within 5–10 minutes of environment changes, filtering genuine failures from noise.</li>
+                <li>Designed a heuristics-based alerting system from scratch — Teams notifications within 5-10 minutes of environment changes, filtering genuine failures from noise.</li>
                 <li>Maintained 50 CI/CD pipelines (Jenkins) and automated test suites supporting ~30,000 test executions per week.</li>
                 <li>Built frontend monitoring achieving ~97% uptime during working hours.</li>
                 <li>Eliminated all security vulnerabilities across team repositories — from 7,000+ issues (100+ critical) to zero.</li>
@@ -331,7 +331,7 @@ export default function CVPage({ onBack }: Props) {
                   <h3>Sparta Global</h3>
                   <span className="cv-role-title">DevOps Training Programme</span>
                 </div>
-                <span className="cv-role-when">Mar 2021 – May 2021</span>
+                <span className="cv-role-when">Mar 2021 - May 2021</span>
               </div>
               <p>
                 Intensive three-month AWS-based training in Python, Django, SQL / SSMS,
@@ -372,7 +372,7 @@ export default function CVPage({ onBack }: Props) {
               <div>
                 <strong>BA Linguistics</strong> — Sapienza Università di Roma
               </div>
-              <span className="cv-edu-when">2010 – 2017</span>
+              <span className="cv-edu-when">2010 - 2017</span>
             </div>
             <div className="cv-edu-row">
               <div>

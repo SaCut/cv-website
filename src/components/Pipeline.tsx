@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import type { DeployConfig, CreatureData } from '../types'
-import { generateCreature } from '../api'
-import type { GenerateResult } from '../api'
+import { generateSprite, animateSprite } from '../api'
 
 interface Props {
   config: DeployConfig
@@ -66,38 +65,32 @@ function logClass(line: string): string {
   return ''
 }
 
-/** Messages shown while waiting for the AI to finish generating. */
-const WAITING_QUIPS = [
-  `> Allocating inference tokens...`,
-  `> Negotiating with texture atlas...`,
-  `> Sampling latent space for viable candidates...`,
-  `> Consulting sprite generation policy document...`,
-  `> Running palette reduction algorithm...`,
-  `> Cross-referencing 20×20 constraint manifold...`,
-  `> Encoding features into embedding space...`,
-  `> Waiting on GPU scheduler...`,
-  `> Performing six-frame interpolation pass...`,
-  `> Applying temporal coherence filters...`,
-  `> Validating against schema: creature.schema.json...`,
-  `> Model is deliberating on colour temperature...`,
-  `> Checking animation keyframe budget...`,
-  `> Marshalling RGB channels...`,
-  `> Canvas initialised at 20×20×6...`,
-  `> Inference batch progressing: 43%...`,
-  `> Awaiting response from gpt-4o-mini cluster...`,
-  `> Running shape recognition heuristics...`,
-  `> Network latency: 124ms (acceptable)...`,
-  `> Decoding JSON payload from completion...`,
-  `> Optimising transparency layer...`,
-  `> Performing final hex-code normalisation...`,
-  `> Waiting for model to finish current thought...`,
-  `> Running anti-aliasing sanity check...`,
-  `> Applying colour quantisation...`,
-  `> Validating palette index bounds...`,
-  `> Token context window: 2847/4096...`,
-  `> Creature manifest schema validation pending...`,
-  `> Rendering subsystem engaged...`,
-  `> Model sampling temperature: 0.7 (creative mode)...`,
+/** Messages shown while waiting for sprite generation. */
+const SPRITE_QUIPS = [
+  `> Model is analyzing the prompt...`,
+  `> Neural network layers activating...`,
+  `> The AI is sketching out initial shapes...`,
+  `> Generating pixel grid at 20×20 resolution...`,
+  `> Model is selecting color palette...`,
+  `> Transformer is deciding where eyes should go...`,
+  `> Adding detail to sprite features...`,
+  `> The model keeps trying to add a 7th color. We keep saying no.`,
+  `> Inference in progress... pixel by pixel...`,
+  `> Model temperature: 0.7. Just right.`,
+]
+
+/** Messages shown while waiting for animation generation. */
+const ANIMATION_QUIPS = [
+  `> Analyzing base sprite structure...`,
+  `> Calculating animation keyframes...`,
+  `> The model is learning how this should move...`,
+  `> Planning motion paths for frame transitions...`,
+  `> Generating frame 2... frame 3... frame 4...`,
+  `> Ensuring smooth loop-back to base pose...`,
+  `> Model is debating subtle vs. obvious movement...`,
+  `> Verifying animation maintains sprite detail...`,
+  `> Computing pixel displacement vectors...`,
+  `> The animator module is doing its thing...`,
 ]
 
 function shuffled<T>(arr: T[]): T[] {
@@ -145,6 +138,12 @@ export default function Pipeline({ config, onComplete }: Props) {
 
   useEffect(() => {
     const c = { current: false }
+    let baseFrame: any = null
+    let spriteLegend: Record<string, string> = {}
+    let spriteRows: string[] = []
+    let animFrames: any[] = []
+    let primaryColour = '#00d4ff'
+    let completelyFailed = false
 
     async function runPipeline() {
       const durations = [800, 1200, 800, 1000, 800]
@@ -153,43 +152,94 @@ export default function Pipeline({ config, onComplete }: Props) {
         if (c.current) return
 
         setCurrentStage(i)
-        setActiveTab(i) // auto-follow the running stage
+        setActiveTab(i)
         const stageLines = makeLogs(STAGES[i].id, config)
         const duration = durations[i]
 
+        // ── Build stage: Generate base sprite ──
         if (STAGES[i].id === 'build') {
-          // Show build logs first
           await addLogLines(i, stageLines, duration / (stageLines.length + 1), c)
           if (c.current) return
 
-          // Start the API request
-          addLogToStage(i, `> Generating creature sprite via API...`)
-          const apiPromise = generateCreature(config.creatureName)
+          addLogToStage(i, `> Generating sprite via LLM...`)
 
-          // While waiting, print fun quips every 1.5 s
-          const quipQueue = shuffled(WAITING_QUIPS)
+          const spriteQuips = shuffled(SPRITE_QUIPS)
           let quipIdx = 0
           const quipTimer = setInterval(() => {
-            if (c.current || quipIdx >= quipQueue.length) return
-            addLogToStage(i, quipQueue[quipIdx++])
+            if (c.current || quipIdx >= spriteQuips.length) return
+            addLogToStage(i, spriteQuips[quipIdx++])
           }, 1500)
 
-          const result: GenerateResult = await apiPromise
+          const spriteResult = await generateSprite(config.creatureName)
           clearInterval(quipTimer)
           if (c.current) return
 
-          creatureRef.current = result.creature
+          baseFrame = spriteResult.frame
+          spriteLegend = spriteResult.legend
+          spriteRows = spriteResult.spriteRows
+          primaryColour = spriteResult.primaryColour
+          completelyFailed = spriteResult.failed && spriteRows.length === 0
 
-          if (result.notice) {
-            addLogToStage(i, `⚠ ${result.notice}`)
-          }
-
-          if (result.aiFailed) {
-            addLogToStage(i, `> Loaded fallback creature "${result.creature.name}" from warehouse ✓`)
+          if (spriteResult.failed) {
+            addLogToStage(i, `> ⚠ ${spriteResult.notice || 'Sprite generation failed'}`)
+            if (completelyFailed) {
+              addLogToStage(i, `> Using fallback sprite from warehouse ✓`)
+              // Skip animation, use fallback creature directly
+              creatureRef.current = {
+                name: config.creatureName,
+                frames: [baseFrame, baseFrame, baseFrame, baseFrame],
+                primaryColour,
+              }
+            } else {
+              addLogToStage(i, `> Base sprite generated (degraded) ✓`)
+            }
           } else {
-            addLogToStage(i, `> Creature "${result.creature.name}" generated ✓`)
+            addLogToStage(i, `> Base sprite generated ✓`)
           }
-        } else {
+        }
+        // ── Test stage: Generate animation ──
+        else if (STAGES[i].id === 'test') {
+          await addLogLines(i, stageLines.slice(0, -2), duration / (stageLines.length + 1), c)
+          if (c.current) return
+
+          if (!completelyFailed && spriteRows.length > 0) {
+            addLogToStage(i, `> Animating sprite via LLM...`)
+
+            const animQuips = shuffled(ANIMATION_QUIPS)
+            let quipIdx = 0
+            const quipTimer = setInterval(() => {
+              if (c.current || quipIdx >= animQuips.length) return
+              addLogToStage(i, animQuips[quipIdx++])
+            }, 1500)
+
+            const animResult = await animateSprite(spriteLegend, spriteRows)
+            clearInterval(quipTimer)
+            if (c.current) return
+
+            if (animResult.failed || animResult.frames.length === 0) {
+              addLogToStage(i, `> ⚠ ${animResult.notice || 'Animation failed'}`)
+              addLogToStage(i, `> Using static sprite ✓`)
+              creatureRef.current = {
+                name: config.creatureName,
+                frames: [baseFrame, baseFrame, baseFrame, baseFrame],
+                primaryColour,
+              }
+            } else {
+              addLogToStage(i, `> Animation frames generated ✓`)
+              animFrames = animResult.frames
+              creatureRef.current = {
+                name: config.creatureName,
+                frames: [baseFrame, ...animFrames],
+                primaryColour,
+              }
+            }
+          }
+
+          // Show final test logs
+          await addLogLines(i, stageLines.slice(-2), 200, c)
+        }
+        // ── Other stages: Normal logs ──
+        else {
           await addLogLines(i, stageLines, duration / (stageLines.length + 1), c)
         }
 

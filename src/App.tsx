@@ -3,12 +3,10 @@ import type { AppState, CreatureData, DeployConfig } from './types'
 import LandingPage from './components/LandingPage'
 import Pipeline from './components/Pipeline'
 import PodCluster from './components/PodCluster'
-import StickyHeader from './components/StickyHeader'
 import CVPage from './components/CVPage'
 
 export default function App() {
-  const [state, setState] = useState<AppState>('landing')
-  const [showConfig, setShowConfig] = useState(false)
+  const [bladeState, setBladeState] = useState<'closed' | 'config' | 'deploying' | 'deployed'>('closed')
   const [showCV, setShowCV] = useState(false)
   const [config, setConfig] = useState<DeployConfig>({
     creatureName: '',
@@ -17,25 +15,35 @@ export default function App() {
   })
   const [creature, setCreature] = useState<CreatureData | null>(null)
 
-  const handleLaunch = useCallback(() => setShowConfig(true), [])
+  const handleLaunch = useCallback(() => {
+    // If there's already a deployment, reopen it; otherwise start new config
+    if (creature !== null) {
+      setBladeState('deployed')
+    } else {
+      setBladeState('config')
+    }
+  }, [creature])
 
   const handleDeploy = useCallback((cfg: DeployConfig) => {
     setConfig(cfg)
-    setShowConfig(false)
-    setState('deploying')
+    setBladeState('deploying')
   }, [])
 
   const handleDeployComplete = useCallback((data: CreatureData) => {
     setCreature(data)
-    setState('deployed')
+    setBladeState('deployed')
   }, [])
 
   const handleReset = useCallback(() => {
-    setState('landing')
-    setShowConfig(false)
-    setShowCV(false)
+    setBladeState('closed')
     setCreature(null)
   }, [])
+
+  const handleCloseBlade = useCallback(() => {
+    if (bladeState === 'config' || bladeState === 'deployed') {
+      setBladeState('closed')
+    }
+  }, [bladeState])
 
   if (showCV) {
     return (
@@ -46,24 +54,39 @@ export default function App() {
   }
 
   return (
-    <div className="app">
-      {state === 'landing' && (
-        <>
-          <LandingPage onLaunch={handleLaunch} onViewCV={() => setShowCV(true)} />
-          {showConfig && <ConfigPanel onDeploy={handleDeploy} />}
-        </>
-      )}
+    <div className="app split-layout">
+      <div className="main-panel">
+        <LandingPage 
+          onLaunch={handleLaunch} 
+          onViewCV={() => setShowCV(true)}
+          hasDeployment={creature !== null}
+        />
+      </div>
 
-      {state === 'deploying' && (
-        <Pipeline config={config} onComplete={handleDeployComplete} />
-      )}
+      <div className={`blade ${bladeState !== 'closed' ? 'blade-open' : ''}`}>
+        {bladeState !== 'closed' && (
+          <button className="blade-close" onClick={handleCloseBlade} title="Close">
+            ✕
+          </button>
+        )}
 
-      {state === 'deployed' && creature && (
-        <>
-          <StickyHeader onViewCV={() => setShowCV(true)} />
-          <PodCluster creature={creature} config={config} onReset={handleReset} />
-        </>
-      )}
+        {bladeState === 'config' && <ConfigPanel onDeploy={handleDeploy} />}
+
+        {bladeState === 'deploying' && (
+          <Pipeline config={config} onComplete={handleDeployComplete} />
+        )}
+
+        {bladeState === 'deployed' && creature && (
+          <>
+            <div className="blade-header">
+              <button className="btn-view-cv-blade" onClick={() => setShowCV(true)}>
+                📄 View CV
+              </button>
+            </div>
+            <PodCluster creature={creature} config={config} onReset={handleReset} />
+          </>
+        )}
+      </div>
     </div>
   )
 }

@@ -31,21 +31,32 @@ function pickQuip(quips: string[]): string {
   return quips[Math.floor(Math.random() * quips.length)]
 }
 
-export async function generateCreature(name: string): Promise<GenerateResult> {
+/** Generate base sprite only (step 1 of 2) */
+export async function generateSprite(name: string): Promise<{
+  frame: any
+  legend: Record<string, string>
+  spriteRows: string[]
+  primaryColour: string
+  failed: boolean
+  notice?: string
+}> {
   if (!API_URL) {
+    const fallback = getRandomCreature(name)
     return {
-      creature: getRandomCreature(name),
-      aiFailed: true,
-      fallbackModel: false,
+      frame: fallback.frames[0],
+      legend: {},
+      spriteRows: [],
+      primaryColour: fallback.primaryColour,
+      failed: true,
       notice: pickQuip(FALLBACK_QUIPS),
     }
   }
 
   try {
     const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 30000) // 30s for LLM
+    const timeout = setTimeout(() => controller.abort(), 30000)
 
-    const res = await fetch(`${API_URL}/generate`, {
+    const res = await fetch(`${API_URL}/generate-sprite`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt: name }),
@@ -54,12 +65,88 @@ export async function generateCreature(name: string): Promise<GenerateResult> {
 
     clearTimeout(timeout)
 
-    if (!res.ok) {
+    if (!res.ok || !res.headers.get('content-type')?.includes('json')) {
+      const fallback = getRandomCreature(name)
       return {
-        creature: getRandomCreature(name),
-        aiFailed: true,
-        fallbackModel: false,
+        frame: fallback.frames[0],
+        legend: {},
+        spriteRows: [],
+        primaryColour: fallback.primaryColour,
+        failed: true,
         notice: pickQuip(FALLBACK_QUIPS),
+      }
+    }
+
+    const data = await res.json()
+
+    if (!data.frame || !data.legend || !data.spriteRows) {
+      const fallback = getRandomCreature(name)
+      return {
+        frame: fallback.frames[0],
+        legend: {},
+        spriteRows: [],
+        primaryColour: fallback.primaryColour,
+        failed: true,
+        notice: pickQuip(FALLBACK_QUIPS),
+      }
+    }
+
+    return {
+      frame: data.frame,
+      legend: data.legend,
+      spriteRows: data.spriteRows,
+      primaryColour: data.primaryColour || '#00d4ff',
+      failed: false,
+    }
+  } catch (err) {
+    console.error('Sprite generation error:', err)
+    const fallback = getRandomCreature(name)
+    return {
+      frame: fallback.frames[0],
+      legend: {},
+      spriteRows: [],
+      primaryColour: fallback.primaryColour,
+      failed: true,
+      notice: pickQuip(FALLBACK_QUIPS),
+    }
+  }
+}
+
+/** Animate existing sprite (step 2 of 2) */
+export async function animateSprite(
+  legend: Record<string, string>,
+  spriteRows: string[],
+): Promise<{
+  frames: any[]
+  failed: boolean
+  notice?: string
+}> {
+  if (!API_URL || !spriteRows || spriteRows.length === 0) {
+    return {
+      frames: [],
+      failed: true,
+      notice: 'No sprite data to animate.',
+    }
+  }
+
+  try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 30000)
+
+    const res = await fetch(`${API_URL}/animate-sprite`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ legend, spriteRows }),
+      signal: controller.signal,
+    })
+
+    clearTimeout(timeout)
+
+    if (!res.ok || !res.headers.get('content-type')?.includes('json')) {
+      return {
+        frames: [],
+        failed: true,
+        notice: 'Animation service unavailable.',
       }
     }
 
@@ -67,29 +154,22 @@ export async function generateCreature(name: string): Promise<GenerateResult> {
 
     if (!Array.isArray(data.frames) || data.frames.length === 0) {
       return {
-        creature: getRandomCreature(name),
-        aiFailed: true,
-        fallbackModel: false,
-        notice: pickQuip(FALLBACK_QUIPS),
+        frames: [],
+        failed: true,
+        notice: 'Animation generation failed.',
       }
     }
 
     return {
-      creature: {
-        name,
-        frames: data.frames,
-        primaryColour: data.primaryColour || '#00d4ff',
-      },
-      aiFailed: false,
-      fallbackModel: !!data.fallbackModel,
-      notice: data.fallbackModel ? pickQuip(MODEL_SWAP_QUIPS) : undefined,
+      frames: data.frames,
+      failed: false,
     }
-  } catch {
+  } catch (err) {
+    console.error('Animation error:', err)
     return {
-      creature: getRandomCreature(name),
-      aiFailed: true,
-      fallbackModel: false,
-      notice: pickQuip(FALLBACK_QUIPS),
+      frames: [],
+      failed: true,
+      notice: 'Animation generation error.',
     }
   }
 }

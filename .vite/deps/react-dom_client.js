@@ -18443,7 +18443,7 @@ var require_react_dom_development = __commonJS({
         function isLegacyActEnvironment(fiber) {
           {
             var isReactActEnvironmentGlobal = (
-              // $FlowExpectedError – Flow doesn't know about IS_REACT_ACT_ENVIRONMENT global
+              // $FlowExpectedError - Flow doesn't know about IS_REACT_ACT_ENVIRONMENT global
               typeof IS_REACT_ACT_ENVIRONMENT !== "undefined" ? IS_REACT_ACT_ENVIRONMENT : void 0
             );
             var jestIsDefined = typeof jest !== "undefined";
@@ -18453,7 +18453,7 @@ var require_react_dom_development = __commonJS({
         function isConcurrentActEnvironment() {
           {
             var isReactActEnvironmentGlobal = (
-              // $FlowExpectedError – Flow doesn't know about IS_REACT_ACT_ENVIRONMENT global
+              // $FlowExpectedError - Flow doesn't know about IS_REACT_ACT_ENVIRONMENT global
               typeof IS_REACT_ACT_ENVIRONMENT !== "undefined" ? IS_REACT_ACT_ENVIRONMENT : void 0
             );
             if (!isReactActEnvironmentGlobal && ReactCurrentActQueue.current !== null) {

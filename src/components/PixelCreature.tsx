@@ -42,6 +42,9 @@ export default function PixelCreature({ creature, size = 5, phaseOffset = 0 }: P
 
   const rows = frame.length
   const cols = frame[0]?.length || 16
+  // Auto-size pixels: target ~160px across, clamped 4-10px
+  const autoSize = Math.max(4, Math.min(10, Math.floor(160 / Math.max(rows, cols))))
+  const px = size !== 5 ? size : autoSize  // respect explicit override, otherwise compute
 
   return (
     <div
@@ -50,8 +53,8 @@ export default function PixelCreature({ creature, size = 5, phaseOffset = 0 }: P
       role="img"
       style={{
         display: 'inline-grid',
-        gridTemplateColumns: `repeat(${cols}, ${size}px)`,
-        gridTemplateRows: `repeat(${rows}, ${size}px)`,
+        gridTemplateColumns: `repeat(${cols}, ${px}px)`,
+        gridTemplateRows: `repeat(${rows}, ${px}px)`,
         gap: '0.5px',
       }}
     >
