@@ -31,11 +31,12 @@ function pickQuip(quips: string[]): string {
   return quips[Math.floor(Math.random() * quips.length)]
 }
 
-/** Generate base sprite only (step 1 of 2) */
+/** Generate base sprite (Q1 describe → Q2 structure → Q3 colour). */
 export async function generateSprite(name: string): Promise<{
   frame: any
-  legend: Record<string, string>
-  spriteRows: string[]
+  palette: Record<string, string>
+  shapes: any[]
+  description: string
   primaryColour: string
   failed: boolean
   notice?: string
@@ -44,8 +45,9 @@ export async function generateSprite(name: string): Promise<{
     const fallback = getRandomCreature(name)
     return {
       frame: fallback.frames[0],
-      legend: {},
-      spriteRows: [],
+      palette: {},
+      shapes: [],
+      description: name,
       primaryColour: fallback.primaryColour,
       failed: true,
       notice: pickQuip(FALLBACK_QUIPS),
@@ -69,8 +71,9 @@ export async function generateSprite(name: string): Promise<{
       const fallback = getRandomCreature(name)
       return {
         frame: fallback.frames[0],
-        legend: {},
-        spriteRows: [],
+        palette: {},
+        shapes: [],
+        description: name,
         primaryColour: fallback.primaryColour,
         failed: true,
         notice: pickQuip(FALLBACK_QUIPS),
@@ -79,12 +82,13 @@ export async function generateSprite(name: string): Promise<{
 
     const data = await res.json()
 
-    if (!data.frame || !data.legend || !data.spriteRows) {
+    if (!data.frame || !data.palette || !data.shapes) {
       const fallback = getRandomCreature(name)
       return {
         frame: fallback.frames[0],
-        legend: {},
-        spriteRows: [],
+        palette: {},
+        shapes: [],
+        description: name,
         primaryColour: fallback.primaryColour,
         failed: true,
         notice: pickQuip(FALLBACK_QUIPS),
@@ -93,8 +97,9 @@ export async function generateSprite(name: string): Promise<{
 
     return {
       frame: data.frame,
-      legend: data.legend,
-      spriteRows: data.spriteRows,
+      palette: data.palette,
+      shapes: data.shapes,
+      description: data.description || name,
       primaryColour: data.primaryColour || '#00d4ff',
       failed: false,
     }
@@ -103,8 +108,9 @@ export async function generateSprite(name: string): Promise<{
     const fallback = getRandomCreature(name)
     return {
       frame: fallback.frames[0],
-      legend: {},
-      spriteRows: [],
+      palette: {},
+      shapes: [],
+      description: name,
       primaryColour: fallback.primaryColour,
       failed: true,
       notice: pickQuip(FALLBACK_QUIPS),
@@ -112,16 +118,18 @@ export async function generateSprite(name: string): Promise<{
   }
 }
 
-/** Animate existing sprite (step 2 of 2) */
+/** Animate existing sprite (Q4 motion → Q5 animate). */
 export async function animateSprite(
-  legend: Record<string, string>,
-  spriteRows: string[],
+  palette: Record<string, string>,
+  shapes: any[],
+  description: string,
+  name: string,
 ): Promise<{
   frames: any[]
   failed: boolean
   notice?: string
 }> {
-  if (!API_URL || !spriteRows || spriteRows.length === 0) {
+  if (!API_URL || !shapes || shapes.length === 0) {
     return {
       frames: [],
       failed: true,
@@ -136,7 +144,7 @@ export async function animateSprite(
     const res = await fetch(`${API_URL}/animate-sprite`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ legend, spriteRows }),
+      body: JSON.stringify({ palette, shapes, description, name }),
       signal: controller.signal,
     })
 

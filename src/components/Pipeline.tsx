@@ -67,30 +67,16 @@ function logClass(line: string): string {
 
 /** Messages shown while waiting for sprite generation. */
 const SPRITE_QUIPS = [
-  `> Model is analyzing the prompt...`,
-  `> Neural network layers activating...`,
-  `> The AI is sketching out initial shapes...`,
-  `> Generating pixel grid at 20×20 resolution...`,
-  `> Model is selecting color palette...`,
+  `> Model is breaking down the subject into shapes...`,
+  `> Q1: describing anatomy in constrained vocabulary...`,
+  `> Q2: converting description to shape primitives...`,
+  `> Placing shapes on a 32×32 canvas...`,
+  `> Q3: assigning colours to each body part...`,
   `> Transformer is deciding where eyes should go...`,
-  `> Adding detail to sprite features...`,
+  `> Triangulating all the pointy bits...`,
   `> The model keeps trying to add a 7th color. We keep saying no.`,
-  `> Inference in progress... pixel by pixel...`,
-  `> Model temperature: 0.7. Just right.`,
-]
-
-/** Messages shown while waiting for animation generation. */
-const ANIMATION_QUIPS = [
-  `> Analyzing base sprite structure...`,
-  `> Calculating animation keyframes...`,
-  `> The model is learning how this should move...`,
-  `> Planning motion paths for frame transitions...`,
-  `> Generating frame 2... frame 3... frame 4...`,
-  `> Ensuring smooth loop-back to base pose...`,
-  `> Model is debating subtle vs. obvious movement...`,
-  `> Verifying animation maintains sprite detail...`,
-  `> Computing pixel displacement vectors...`,
-  `> The animator module is doing its thing...`,
+  `> Cross-referencing shape vocabulary with anatomy...`,
+  `> Model temperature: 0.4. Crisp and focused.`,
 ]
 
 function shuffled<T>(arr: T[]): T[] {
@@ -139,9 +125,9 @@ export default function Pipeline({ config, onComplete }: Props) {
   useEffect(() => {
     const c = { current: false }
     let baseFrame: any = null
-    let spriteLegend: Record<string, string> = {}
-    let spriteRows: string[] = []
-    let animFrames: any[] = []
+    let spritePalette: Record<string, string> = {}
+    let spriteShapes: any[] = []
+    let spriteDescription = config.creatureName
     let primaryColour = '#00d4ff'
     let completelyFailed = false
 
@@ -156,7 +142,7 @@ export default function Pipeline({ config, onComplete }: Props) {
         const stageLines = makeLogs(STAGES[i].id, config)
         const duration = durations[i]
 
-        // ── Build stage: Generate base sprite ──
+        // ── Build stage: Generate sprite ──
         if (STAGES[i].id === 'build') {
           await addLogLines(i, stageLines, duration / (stageLines.length + 1), c)
           if (c.current) return
@@ -175,16 +161,16 @@ export default function Pipeline({ config, onComplete }: Props) {
           if (c.current) return
 
           baseFrame = spriteResult.frame
-          spriteLegend = spriteResult.legend
-          spriteRows = spriteResult.spriteRows
+          spritePalette = spriteResult.palette
+          spriteShapes = spriteResult.shapes
+          spriteDescription = spriteResult.description
           primaryColour = spriteResult.primaryColour
-          completelyFailed = spriteResult.failed && spriteRows.length === 0
+          completelyFailed = spriteResult.failed && spriteShapes.length === 0
 
           if (spriteResult.failed) {
             addLogToStage(i, `> ⚠ ${spriteResult.notice || 'Sprite generation failed'}`)
             if (completelyFailed) {
               addLogToStage(i, `> Using fallback sprite from warehouse ✓`)
-              // Skip animation, use fallback creature directly
               creatureRef.current = {
                 name: config.creatureName,
                 frames: [baseFrame, baseFrame, baseFrame, baseFrame],
@@ -197,28 +183,19 @@ export default function Pipeline({ config, onComplete }: Props) {
             addLogToStage(i, `> Base sprite generated ✓`)
           }
         }
-        // ── Test stage: Generate animation ──
+        // ── Test stage: Animate sprite ──
         else if (STAGES[i].id === 'test') {
           await addLogLines(i, stageLines.slice(0, -2), duration / (stageLines.length + 1), c)
           if (c.current) return
 
-          if (!completelyFailed && spriteRows.length > 0) {
-            addLogToStage(i, `> Animating sprite via LLM...`)
+          if (!completelyFailed && spriteShapes.length > 0) {
+            addLogToStage(i, `> Animating sprite...`)
 
-            const animQuips = shuffled(ANIMATION_QUIPS)
-            let quipIdx = 0
-            const quipTimer = setInterval(() => {
-              if (c.current || quipIdx >= animQuips.length) return
-              addLogToStage(i, animQuips[quipIdx++])
-            }, 1500)
-
-            const animResult = await animateSprite(spriteLegend, spriteRows)
-            clearInterval(quipTimer)
+            const animResult = await animateSprite(spritePalette, spriteShapes, spriteDescription, config.creatureName)
             if (c.current) return
 
             if (animResult.failed || animResult.frames.length === 0) {
-              addLogToStage(i, `> ⚠ ${animResult.notice || 'Animation failed'}`)
-              addLogToStage(i, `> Using static sprite ✓`)
+              addLogToStage(i, `> ⚠ ${animResult.notice || 'Animation failed'} — using static sprite ✓`)
               creatureRef.current = {
                 name: config.creatureName,
                 frames: [baseFrame, baseFrame, baseFrame, baseFrame],
@@ -226,10 +203,9 @@ export default function Pipeline({ config, onComplete }: Props) {
               }
             } else {
               addLogToStage(i, `> Animation frames generated ✓`)
-              animFrames = animResult.frames
               creatureRef.current = {
                 name: config.creatureName,
-                frames: [baseFrame, ...animFrames],
+                frames: [baseFrame, ...animResult.frames],
                 primaryColour,
               }
             }
