@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import type { CreatureData, DeployConfig } from '../types'
-import VoxelScene from './VoxelScene'
+import PixelCreature from './PixelCreature'
 
 interface Props {
   creature: CreatureData
@@ -18,7 +18,7 @@ function usePodLogs(podName: string, creature: string) {
     const startupLogs = [
       `[init] pulling image creature-registry/${creature}:latest`,
       `[init] image pulled in 0.${Math.floor(Math.random() * 9)}s`,
-      `[main] starting voxel renderer...`,
+      `[main] starting pixel renderer...`,
       `[main] creature loaded: ${creature}`,
       `[health] liveness probe: OK`,
       `[health] readiness probe: OK`,
@@ -31,27 +31,76 @@ function usePodLogs(podName: string, creature: string) {
 
     // periodic idle logs
     const idleMessages = [
+      // health
       `[health] liveness probe: OK`,
-      `[metrics] cpu: ${Math.floor(Math.random() * 30 + 5)}m, mem: ${Math.floor(Math.random() * 100 + 50)}Mi`,
-      `[main] creature is vibing`,
-      `[main] voxels rendered: ${Math.floor(Math.random() * 150 + 50)}`,
       `[health] readiness probe: OK`,
-      `[metrics] requests: ${Math.floor(Math.random() * 10)}/s`,
-      `[main] creature refuses to stop vibing`,
-      `[warn] creature escaped pod briefly, retrieved`,
-      `[main] voxel #${Math.floor(Math.random() * 50)} is having an existential crisis`,
-      `[metrics] happiness: ${Math.floor(Math.random() * 40 + 60)}%`,
       `[health] creature passed vibe check ✓`,
-      `[main] creature demands more RAM`,
-      `[warn] creature tried to kubectl exec into neighboring pod`,
-      `[main] tail wag frequency: ${(Math.random() * 3 + 1).toFixed(1)}Hz`,
-      `[metrics] cuddle-readiness: optimal`,
-      `[main] creature is writing yaml now. we've lost control`,
       `[health] emotional support probe: OK`,
-      `[warn] creature discovered npm install. send help`,
-      `[main] deploying additional cuteness... done`,
+      `[health] no anomalies detected (suspicious)`,
+      `[health] wellness score: immaculate`,
+      `[health] heartbeat strong and rhythmic`,
+      `[health] existential-dread probe: negative`,
+
+      // metrics
+      `[metrics] cpu: ${Math.floor(Math.random() * 30 + 5)}m, mem: ${Math.floor(Math.random() * 100 + 50)}Mi`,
+      `[metrics] requests: ${Math.floor(Math.random() * 10)}/s`,
+      `[metrics] happiness: ${Math.floor(Math.random() * 40 + 60)}%`,
+      `[metrics] cuddle-readiness: optimal`,
       `[metrics] chaos engineering score: ${Math.floor(Math.random() * 100)}/100`,
+      `[metrics] pixel saturation: ${Math.floor(Math.random() * 20 + 80)}%`,
+      `[metrics] whimsy factor: ${(Math.random() * 5 + 5).toFixed(1)} mW`,
+      `[metrics] sass level: moderate`,
+      `[metrics] charm per second: ${Math.floor(Math.random() * 50 + 10)}`,
+      `[metrics] caffeine reserves: ${Math.floor(Math.random() * 30 + 70)}%`,
+      `[metrics] estimated time to boredom: ∞`,
+      `[metrics] fluffiness index: ${(Math.random() * 2 + 8).toFixed(2)}`,
+      `[metrics] GC pause: ${Math.floor(Math.random() * 5)}ms (acceptable)`,
+
+      // main
+      `[main] creature is vibing`,
+      `[main] pixels rendered: ${Math.floor(Math.random() * 150 + 50)}`,
+      `[main] creature refuses to stop vibing`,
+      `[main] pixel #${Math.floor(Math.random() * 50)} is having an existential crisis`,
+      `[main] creature demands more RAM`,
+      `[main] tail wag frequency: ${(Math.random() * 3 + 1).toFixed(1)}Hz`,
+      `[main] creature is writing yaml now. we've lost control`,
+      `[main] deploying additional cuteness... done`,
       `[main] creature has opinions about tabs vs spaces`,
+      `[main] creature autonomously refactored the codebase`,
+      `[main] creature made a PR. it was merged instantly`,
+      `[main] frame ${Math.floor(Math.random() * 6) + 1}/6 is creature's favourite`,
+      `[main] creature claims this pod is "cosy"`,
+      `[main] creature is debugging itself (meta)`,
+      `[main] rendering micro-expression #${Math.floor(Math.random() * 200)}`,
+      `[main] creature updated its LinkedIn`,
+      `[main] creature requests a window seat`,
+      `[main] sprite compression ratio: excellent`,
+      `[main] creature achieved inner pixel peace`,
+      `[main] drawing antialiased thoughts...`,
+      `[main] creature just learned about dependency injection`,
+      `[main] creature filed a JIRA ticket about its snack schedule`,
+      `[main] creature started a side project inside this pod`,
+      `[main] palette optimisation pass complete`,
+      `[main] creature quietly judging your code review`,
+      `[main] scheduled micro-nap in 3... 2... cancelled, back to work`,
+      `[main] creature nominated for Best Pod Resident Q1`,
+      `[main] creature is humming the k8s theme song`,
+      `[main] idle animation loop #${Math.floor(Math.random() * 999)}: smooth`,
+
+      // warn
+      `[warn] creature escaped pod briefly, retrieved`,
+      `[warn] creature tried to kubectl exec into neighbouring pod`,
+      `[warn] creature discovered npm install. send help`,
+      `[warn] creature opened 47 browser tabs in the container`,
+      `[warn] creature ate the readiness probe cookie`,
+      `[warn] pixel overflow detected in quadrant 3 — contained`,
+      `[warn] creature asking about Kubernetes secrets. do not answer.`,
+      `[warn] creature attempted lateral movement. charm-based.`,
+      `[warn] creature is now root. this is fine.`,
+      `[warn] creature's pull request has merge conflicts with reality`,
+      `[warn] creature found the production database. distracted with snacks.`,
+      `[warn] creature's side-eye is consuming 12% CPU`,
+      `[warn] pod disruption budget violated by cuteness overflow`,
     ]
 
     intervalRef.current = setInterval(() => {
@@ -128,14 +177,22 @@ function TerminalPod({
 
       {!stopped && (
         <>
-          <div className="voxel-viewport">
-            <VoxelScene creature={creature} phaseOffset={phaseOffset} />
+          <div className="pixel-viewport">
+            <PixelCreature creature={creature} phaseOffset={phaseOffset} />
           </div>
 
           <div className="pod-logs" ref={logsRef}>
-            {logs.map((line, i) => (
-              <div key={i}>{line}</div>
-            ))}
+            {logs.map((line, i) => {
+              const m = line.match(/^\[(\w+)\]\s?(.*)/)
+              if (m) {
+                return (
+                  <div key={i}>
+                    <span className={`log-level level-${m[1]}`}>[{m[1]}]</span> {m[2]}
+                  </div>
+                )
+              }
+              return <div key={i}>{line}</div>
+            })}
           </div>
 
           <div className="pod-meta">

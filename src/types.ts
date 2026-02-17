@@ -1,18 +1,9 @@
-export interface Voxel {
-  x: number
-  y: number
-  z: number
-  color: string
-}
-
-export type AnimationType = 'sway' | 'swim' | 'hover' | 'bounce' | 'waddle' | 'flutter' | 'drift'
+export type PixelFrame = (string | null)[][]
 
 export interface CreatureData {
   name: string
-  voxels: Voxel[]
-  primaryColor: string
-  scale: number
-  animation: AnimationType
+  frames: PixelFrame[]
+  primaryColour: string
 }
 
 export type AppState = 'landing' | 'deploying' | 'deployed'
