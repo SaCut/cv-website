@@ -561,9 +561,14 @@ a:hover { text-decoration: underline; }
 
 .blade .pipeline-logs {
   flex: 1;
+  min-height: 0;
   max-height: none;
   border-radius: 0;
   box-shadow: none;
+}
+
+.blade .pipeline-complete {
+  flex-shrink: 0;
 }
 
 .pipeline-logs .log-line {
