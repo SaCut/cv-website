@@ -32,7 +32,7 @@ const MODEL_TIMEOUT_MS = 28_000
    ═══════════════════════════════════════════════════════ */
 
 /** Q1 — Describe: constrained-vocabulary visual breakdown (mini). */
-const DESCRIBE_PROMPT = `You are a creature designer for a pixel art game. Given a subject, describe its visual appearance as a side-view sprite using ONLY this design vocabulary.
+const DESCRIBE_PROMPT = `You are a visual designer for a pixel art game. Given any subject (creature, object, building, or scene), describe its visual appearance as a side-view sprite using ONLY this design vocabulary.
 
 SHAPES: circle, oval, thin rectangle, squat rectangle, wide rectangle, tall rectangle, square, triangle, rhombus, pointed spike, line, dot
 SIZES: tiny (1-2px), small (3-5px), medium (6-10px), large (11-16px), huge (17-24px)
@@ -40,11 +40,11 @@ COUNTS: one, two, a few (3-4), several (5-7), many (8+)
 POSITIONS: centered, above X, below X, left of X, right of X, around X, on top of X, at the tip of X, flanking X, inside X, behind X
 
 Rules:
-- SIDE VIEW facing right
+- SIDE VIEW or best viewing angle for this subject
 - Break down into 6-12 component parts
-- Be anatomically specific — what makes THIS subject recognizable?
-- TRIANGULAR shapes for ALL pointed features (fins, horns, beaks, claws, ears, tails, spikes, fangs)
-- Order from largest (body) to smallest (details)
+- Be specific — what makes THIS subject instantly recognizable?
+- Use TRIANGULAR shapes for ALL pointed/sharp features (spikes, peaks, edges, tips, blades, corners, thorns)
+- Order from largest elements to smallest details
 
 Output ONLY this JSON:
 {"parts":["one large oval as the body, centered","two small triangles as ears, on top of the body",...]}`
@@ -86,6 +86,15 @@ COMPOSITION ORDER:
 Example — turtle (16 shapes):
 {"roles":["outline","shell","shell_light","skin","eye_white","pupil"],"shapes":[{"type":"ellipse","cx":15,"cy":17,"rx":10,"ry":7,"role":"outline"},{"type":"ellipse","cx":15,"cy":17,"rx":9,"ry":6,"role":"shell"},{"type":"ellipse","cx":15,"cy":15,"rx":7,"ry":4,"role":"shell_light"},{"type":"ellipse","cx":24,"cy":16,"rx":4,"ry":3,"role":"outline"},{"type":"ellipse","cx":24,"cy":16,"rx":3,"ry":2,"role":"skin"},{"type":"rect","x":27,"y":15,"w":3,"h":2,"role":"skin"},{"type":"triangle","points":[[5,20],[8,15],[8,21]],"role":"shell"},{"type":"triangle","points":[[4,19],[5,17],[6,21]],"role":"shell_light"},{"type":"rect","x":10,"y":22,"w":3,"h":4,"role":"outline"},{"type":"rect","x":10,"y":22,"w":2,"h":3,"role":"skin"},{"type":"rect","x":19,"y":22,"w":3,"h":4,"role":"outline"},{"type":"rect","x":19,"y":22,"w":2,"h":3,"role":"skin"},{"type":"pixels","coords":[[26,15],[27,15]],"role":"eye_white"},{"type":"pixels","coords":[[27,16]],"role":"pupil"},{"type":"ellipse","cx":15,"cy":18,"rx":4,"ry":2,"role":"shell_light"},{"type":"pixels","coords":[[12,18],[18,18],[15,20]],"role":"shell"}]}
 
+Example — sword (15 shapes):
+{"roles":["blade_outline","blade","blade_shine","hilt","guard","guard_dark","pommel","grip"],"shapes":[{"type":"rect","x":20,"y":8,"w":10,"h":2,"role":"blade_outline"},{"type":"rect","x":20,"y":9,"w":9,"h":1,"role":"blade"},{"type":"triangle","points":[[30,8],[32,10],[30,11]],"role":"blade_outline"},{"type":"triangle","points":[[30,9],[31,10],[30,10]],"role":"blade"},{"type":"pixels","coords":[[22,9],[24,9]],"role":"blade_shine"},{"type":"rect","x":14,"y":6,"w":7,"h":6,"role":"guard"},{"type":"rect","x":14,"y":7,"w":6,"h":4,"role":"guard_dark"},{"type":"rect","x":8,"y":8,"w":6,"h":3,"role":"grip"},{"type":"ellipse","cx":6,"cy":10,"rx":2,"ry":2,"role":"pommel"}]}
+
+Example — floating island (22 shapes):
+{"roles":["outline","landmass","grass","rock","rock_dark","waterfall","tree_trunk","tree_leaves","cloud"],"shapes":[{"type":"ellipse","cx":16,"cy":18,"rx":12,"ry":8,"role":"outline"},{"type":"ellipse","cx":16,"cy":18,"rx":11,"ry":7,"role":"rock"},{"type":"ellipse","cx":16,"cy":12,"rx":10,"ry":4,"role":"grass"},{"type":"rect","x":10,"y":19,"w":3,"h":2,"role":"rock_dark"},{"type":"rect","x":20,"y":20,"w":2,"h":2,"role":"rock_dark"},{"type":"rect","x":4,"y":20,"w":1,"h":8,"role":"waterfall"},{"type":"rect","x":5,"y":22,"w":1,"h":6,"role":"waterfall"},{"type":"rect","x":11,"y":10,"w":2,"h":4,"role":"tree_trunk"},{"type":"triangle","points":[[12,6],[8,10],[16,10]],"role":"tree_leaves"},{"type":"rect","x":19,"y":9,"w":2,"h":5,"role":"tree_trunk"},{"type":"triangle","points":[[20,5],[17,9],[23,9]],"role":"tree_leaves"},{"type":"ellipse","cx":8,"cy":6,"rx":3,"ry":2,"role":"cloud"},{"type":"ellipse","cx":24,"cy":8,"rx":4,"ry":2,"role":"cloud"}]}
+
+Example — potion bottle (18 shapes):
+{"roles":["outline","glass","liquid","liquid_dark","bubbles","cork","label","shine"],"shapes":[{"type":"rect","x":12,"y":6,"w":8,"h":3,"role":"outline"},{"type":"rect","x":13,"y":6,"w":6,"h":2,"role":"cork"},{"type":"rect","x":10,"y":9,"w":12,"h":14,"role":"outline"},{"type":"rect","x":11,"y":10,"w":10,"h":12,"role":"glass"},{"type":"rect","x":12,"y":16,"w":8,"h":6,"role":"liquid"},{"type":"rect","x":12,"y":20,"w":8,"h":2,"role":"liquid_dark"},{"type":"pixels","coords":[[14,17],[16,18],[15,19]],"role":"bubbles"},{"type":"rect","x":13,"y":13,"w":6,"h":2,"role":"label"},{"type":"pixels","coords":[[12,11],[13,11]],"role":"shine"}]}
+
 Rules:
 - Side view facing right — asymmetric silhouette, NOT a circle or diamond
 - 20-28px tall, roughly centred on canvas
@@ -102,7 +111,7 @@ Rules:
 - "outline" or similar edge roles: very dark (#1a-#3a range)
 - "eye_white" or highlight roles: bright (#ddd-#fff range)
 - "pupil": near black
-- Be specific — not generic: a pufferfish is sandy yellow, not plain orange; a dragon is rich green or crimson, not grey
+- Be specific — not generic: a pufferfish is sandy yellow, not plain orange; a dragon is rich green or crimson, not grey; a floating island is mossy green with grey stone, not blue; a sword blade is steel grey with bright highlights, not dull brown
 
 Output ONLY this JSON:
 {"colors":{"role_name":"#hex",...},"primaryColour":"#hex"}`
