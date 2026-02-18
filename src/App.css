@@ -20,7 +20,7 @@
   --shadow:      0 4px 20px rgba(0,0,0,0.08);
   --shadow-pop:  0 8px 30px rgba(124, 58, 237, 0.15);
   --mono:        'Space Mono', monospace;
-  --sans:        'Nunito', system-ui, sans-serif;
+  --sans:        'Inter', system-ui, sans-serif;
   --radius:      16px;
 }
 
@@ -118,7 +118,7 @@ a:hover { text-decoration: underline; }
 }
 
 .blade-header {
-  padding: 1rem 1.5rem;
+  padding: 3.5rem 1.5rem 1rem;
   border-bottom: 1px solid var(--border);
   display: flex;
   gap: 0.5rem;
@@ -319,8 +319,9 @@ a:hover { text-decoration: underline; }
   flex: 1;
   border-radius: 0;
   box-shadow: none;
-  padding: 2rem 1.5rem;
+  padding: 3.5rem 1.5rem 2rem;
   background: transparent;
+  overflow-y: auto;
 }
 
 .config-panel h2 {
@@ -447,7 +448,7 @@ a:hover { text-decoration: underline; }
 
 .blade .pipeline-view {
   max-width: none;
-  padding: 2.5rem 1rem 1rem;
+  padding: 3.5rem 1rem 1rem;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -1288,7 +1289,7 @@ a:hover { text-decoration: underline; }
   .landing-title { font-size: 1.1rem; }
   .landing-cta-row { flex-direction: column; align-items: center; }
   .pipeline-stages { flex-wrap: wrap; gap: 0.5rem; }
-  .stage-connector { width: 20px; }
+  .stage-connector { display: none; }
   .pod-grid { grid-template-columns: 1fr; }
   .cluster-view { padding: 1rem; }
   .config-panel { margin: 1rem; }
@@ -1313,6 +1314,12 @@ a:hover { text-decoration: underline; }
   
   .blade-open {
     box-shadow: none;
+  }
+  
+  .blade-close {
+    width: 2.75rem;
+    height: 2.75rem;
+    font-size: 1.2rem;
   }
   
   .split-layout .main-panel {
