@@ -1000,97 +1000,17 @@ a:hover { text-decoration: underline; }
   color: var(--accent);
 }
 
-/* ── voxel sprites ─── */
+/* ── cv-section sprites ─── */
 
-.voxel-sprite {
-  display: inline-grid;
-  gap: 0.5px;
-  flex-shrink: 0;
-}
-
-.voxel-sprite .vx {
-  display: block;
-  border-radius: 1px;
-}
-
-/* section-level sprites: sit alongside text */
 .cv-section-sprite {
-  opacity: 0.5;
+  opacity: 0.55;
   align-self: flex-start;
-  margin-top: 0.3rem;
+  margin-top: 0.5rem;
 }
 
 .cv-footer-sprite {
   opacity: 0.35;
 }
-
-/* sprite animations — each icon gets its own personality */
-@keyframes spriteCloudDrift {
-  0%   { transform: translateX(0) translateY(0); }
-  25%  { transform: translateX(6px) translateY(-3px); }
-  50%  { transform: translateX(12px) translateY(0); }
-  75%  { transform: translateX(6px) translateY(-3px); }
-  100% { transform: translateX(0) translateY(0); }
-}
-
-@keyframes spriteToolboxJiggle {
-  0%, 100% { transform: rotate(0deg) scale(1); }
-  10%  { transform: rotate(-4deg) scale(1.02); }
-  20%  { transform: rotate(4deg) scale(1.02); }
-  30%  { transform: rotate(-3deg); }
-  40%  { transform: rotate(3deg); }
-  50%  { transform: rotate(0deg) scale(1); }
-}
-
-@keyframes spriteRocketLaunch {
-  0%   { transform: translateY(0) rotate(0deg); }
-  20%  { transform: translateY(-2px) rotate(-1deg); }
-  50%  { transform: translateY(-14px) rotate(2deg); }
-  55%  { transform: translateY(-14px) rotate(0deg); }
-  80%  { transform: translateY(-2px) rotate(-1deg); }
-  100% { transform: translateY(0) rotate(0deg); }
-}
-
-@keyframes spriteFlaskBubble {
-  0%, 100% { transform: rotate(0deg) translateY(0); }
-  15%  { transform: rotate(6deg) translateY(-2px); }
-  30%  { transform: rotate(-6deg) translateY(0); }
-  45%  { transform: rotate(4deg) translateY(-3px); }
-  60%  { transform: rotate(-3deg) translateY(-1px); }
-  75%  { transform: rotate(2deg) translateY(-4px); }
-  90%  { transform: rotate(0deg) translateY(-2px); }
-}
-
-@keyframes spriteGradToss {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  30%  { transform: translateY(-18px) rotate(-10deg); }
-  50%  { transform: translateY(-24px) rotate(5deg); }
-  70%  { transform: translateY(-18px) rotate(-5deg); }
-  90%  { transform: translateY(-2px) rotate(2deg); }
-}
-
-@keyframes spriteSpeechPop {
-  0%, 100% { transform: scale(1) translateY(0); }
-  20%  { transform: scale(1.08) translateY(-3px); }
-  40%  { transform: scale(0.95) translateY(1px); }
-  60%  { transform: scale(1.04) translateY(-2px); }
-  80%  { transform: scale(0.98) translateY(0); }
-}
-
-@keyframes spriteCatPurr {
-  0%, 100% { transform: scaleX(1) scaleY(1) translateY(0); }
-  25%  { transform: scaleX(1.05) scaleY(0.95) translateY(1px); }
-  50%  { transform: scaleX(0.96) scaleY(1.04) translateY(-1px); }
-  75%  { transform: scaleX(1.03) scaleY(0.97) translateY(1px); }
-}
-
-.cv-sprite-cloud   { animation: spriteCloudDrift 6s ease-in-out infinite; }
-.cv-sprite-toolbox { animation: spriteToolboxJiggle 5s ease-in-out infinite; }
-.cv-sprite-rocket  { animation: spriteRocketLaunch 4s cubic-bezier(0.2, 0.8, 0.3, 1) infinite; }
-.cv-sprite-flask   { animation: spriteFlaskBubble 5s ease-in-out infinite; }
-.cv-sprite-grad    { animation: spriteGradToss 4.5s cubic-bezier(0.2, 0.6, 0.4, 1) infinite; }
-.cv-sprite-speech  { animation: spriteSpeechPop 3s ease-in-out infinite; }
-.cv-sprite-cat     { animation: spriteCatPurr 2.5s ease-in-out infinite; }
 
 /* illustrated sections: sprite + text side by side */
 .cv-illustrated-section {
@@ -1141,39 +1061,39 @@ a:hover { text-decoration: underline; }
   font-weight: 600;
 }
 
-/* ── divider ─── */
+/* ── section spacing ─── */
 
-.cv-divider {
-  border: none;
+.cv-section {
+  margin-bottom: 0.5rem;
+  padding-top: 2.2rem;
   border-top: 1px solid var(--border);
-  margin: 1.8rem 0;
+}
+
+.cv-section:first-of-type {
+  padding-top: 2.2rem;
 }
 
 /* ── prose sections ─── */
 
-.cv-prose {
-  margin-bottom: 0.5rem;
-}
-
-.cv-prose h2 {
+.cv-section h2 {
   font-size: 1.05rem;
   font-weight: 800;
   color: var(--text);
   margin-bottom: 0.9rem;
 }
 
-.cv-prose p {
+.cv-section p {
   font-size: 0.9rem;
   line-height: 1.8;
   color: var(--text-muted);
   margin-bottom: 0.7rem;
 }
 
-.cv-prose ul {
+.cv-section ul {
   margin: 0.5rem 0 0.8rem 1.2rem;
 }
 
-.cv-prose li {
+.cv-section li {
   font-size: 0.85rem;
   line-height: 1.7;
   color: var(--text-muted);

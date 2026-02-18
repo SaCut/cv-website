@@ -1,161 +1,8 @@
+import CVSprite from './CVSprite'
+
 interface Props {
   onBack: () => void
 }
-
-/* ── pixel-art sprites (pure CSS, 10×10) ─────────────── */
-/* Each sprite is topical to its section.                  */
-
-type Sprite = (string | null)[][]
-
-const SPRITES: Record<string, { grid: Sprite; label: string }> = {
-  /* cloud server — for the "About" intro */
-  cloud: {
-    label: 'cloud server',
-    grid: [
-      [null,    null,    null,    '#c4d9f2',null,    null,    null,    null,    null,    null   ],
-      [null,    null,    '#c4d9f2','#dae8fc','#c4d9f2',null,   null,    null,    null,    null   ],
-      [null,    '#c4d9f2','#dae8fc','#dae8fc','#dae8fc','#c4d9f2',null,  null,    null,    null   ],
-      ['#c4d9f2','#dae8fc','#dae8fc','#dae8fc','#dae8fc','#dae8fc','#c4d9f2',null, null,   null   ],
-      ['#c4d9f2','#dae8fc','#dae8fc','#dae8fc','#dae8fc','#dae8fc','#dae8fc','#c4d9f2',null, null ],
-      [null,    null,    null,    null,    null,    null,    null,    null,    null,    null   ],
-      [null,    null,    '#888',  '#888',  '#888',  '#888',  '#888',  '#888',  null,    null   ],
-      [null,    null,    '#AAA',  '#66CCFF','#AAA', '#66CCFF','#AAA', '#AAA',  null,    null   ],
-      [null,    null,    '#888',  '#888',  '#888',  '#888',  '#888',  '#888',  null,    null   ],
-      [null,    null,    null,    '#666',  null,    null,    '#666',  null,    null,    null   ],
-    ],
-  },
-  /* toolbox with wrench — for "What I work with" */
-  toolbox: {
-    label: 'toolbox',
-    grid: [
-      [null,    null,    null,    '#888',  '#888',  null,    null,    null,    null,    null   ],
-      [null,    null,    '#888',  null,    null,    '#888',  null,    null,    null,    null   ],
-      [null,    '#D44',  '#D44',  '#D44',  '#D44',  '#D44',  '#D44',  '#D44',  '#D44',  null   ],
-      [null,    '#C33',  '#C33',  '#C33',  '#FFCC00','#FFCC00','#C33', '#C33',  '#C33',  null   ],
-      [null,    '#B22',  '#B22',  '#B22',  '#B22',  '#B22',  '#B22',  '#B22',  '#B22',  null   ],
-      [null,    '#B22',  '#DDD',  '#DDD',  '#B22',  '#B22',  '#B22',  '#B22',  '#B22',  null   ],
-      [null,    '#B22',  '#DDD',  '#DDD',  '#B22',  '#B22',  '#B22',  '#B22',  '#B22',  null   ],
-      [null,    '#A11',  '#A11',  '#A11',  '#A11',  '#A11',  '#A11',  '#A11',  '#A11',  null   ],
-      [null,    null,    null,    null,    null,    null,    null,    null,    null,    null   ],
-      [null,    null,    null,    null,    null,    null,    null,    null,    null,    null   ],
-    ],
-  },
-  /* rocket launching — for "Experience" */
-  rocket: {
-    label: 'rocket',
-    grid: [
-      [null,    null,    null,    null,    '#FF3333',null,    null,    null,    null,    null   ],
-      [null,    null,    null,    '#FF3333','#E0E0E0','#FF3333',null,   null,    null,    null   ],
-      [null,    null,    null,    '#E0E0E0','#FF3333','#E0E0E0',null,   null,    null,    null   ],
-      [null,    null,    null,    '#D0D0D0','#66CCFF','#D0D0D0',null,   null,    null,    null   ],
-      [null,    null,    null,    '#E0E0E0','#E0E0E0','#E0E0E0',null,   null,    null,    null   ],
-      [null,    null,    '#FF3333','#E0E0E0','#E0E0E0','#E0E0E0','#FF3333',null,  null,    null   ],
-      [null,    null,    '#FF3333','#D0D0D0','#E0E0E0','#D0D0D0','#FF3333',null,  null,    null   ],
-      [null,    null,    null,    '#FF6600','#FF8800','#FF6600',null,   null,    null,    null   ],
-      [null,    null,    null,    null,    '#FFCC00',null,    null,    null,    null,    null   ],
-      [null,    null,    null,    '#FFCC00',null,    '#FFCC00',null,    null,    null,    null   ],
-    ],
-  },
-  /* beaker / flask — for "Independent projects" */
-  flask: {
-    label: 'flask',
-    grid: [
-      [null,    null,    null,    '#AAA',  '#AAA',  '#AAA',  null,    null,    null,    null   ],
-      [null,    null,    null,    '#DDD',  '#EEE',  '#DDD',  null,    null,    null,    null   ],
-      [null,    null,    null,    '#DDD',  '#EEE',  '#DDD',  null,    null,    null,    null   ],
-      [null,    null,    '#DDD',  '#DDD',  '#EEE',  '#DDD',  '#DDD',  null,    null,    null   ],
-      [null,    '#DDD',  '#DDD',  '#88DDFF','#88DDFF','#88DDFF','#DDD','#DDD',  null,    null   ],
-      [null,    '#DDD',  '#88DDFF','#44BBEE','#44BBEE','#44BBEE','#88DDFF','#DDD',null,  null   ],
-      [null,    '#DDD',  '#88DDFF','#44BBEE','#FFaa33','#44BBEE','#88DDFF','#DDD',null,  null   ],
-      [null,    '#DDD',  '#44BBEE','#44BBEE','#44BBEE','#44BBEE','#44BBEE','#DDD',null,  null   ],
-      [null,    null,    '#DDD',  '#DDD',  '#DDD',  '#DDD',  '#DDD',  null,    null,    null   ],
-      [null,    null,    null,    null,    null,    null,    null,    null,    null,    null   ],
-    ],
-  },
-  /* mortarboard — for "Education" */
-  grad: {
-    label: 'mortarboard',
-    grid: [
-      [null,    null,    null,    null,    null,    null,    null,    null,    null,    null   ],
-      [null,    null,    null,    null,    '#333',  '#333',  null,    null,    null,    null   ],
-      [null,    '#333',  '#333',  '#333',  '#333',  '#333',  '#333',  '#333',  '#333',  null   ],
-      ['#333',  '#333',  '#333',  '#333',  '#333',  '#333',  '#333',  '#333',  '#333',  '#333' ],
-      [null,    null,    '#444',  '#444',  '#444',  '#444',  '#444',  '#444',  null,    null   ],
-      [null,    null,    '#444',  '#444',  '#444',  '#444',  '#444',  '#444',  null,    null   ],
-      [null,    null,    null,    '#444',  '#444',  '#444',  '#444',  null,    null,    null   ],
-      [null,    null,    null,    null,    '#FFCC00','#FFCC00',null,   null,    null,    null   ],
-      [null,    null,    null,    null,    '#FFCC00','#FFCC00',null,   null,    null,    null   ],
-      [null,    null,    null,    '#FFCC00','#FFCC00','#FFCC00','#FFCC00',null, null,    null   ],
-    ],
-  },
-  /* speech bubble — for "Manager quotes" */
-  speech: {
-    label: 'speech bubble',
-    grid: [
-      [null,    '#c4d9f2','#c4d9f2','#c4d9f2','#c4d9f2','#c4d9f2','#c4d9f2','#c4d9f2',null,   null   ],
-      ['#c4d9f2','#dae8fc','#dae8fc','#dae8fc','#dae8fc','#dae8fc','#dae8fc','#dae8fc','#c4d9f2',null  ],
-      ['#c4d9f2','#dae8fc','#7c3aed','#7c3aed','#dae8fc','#7c3aed','#7c3aed','#dae8fc','#c4d9f2',null  ],
-      ['#c4d9f2','#dae8fc','#dae8fc','#dae8fc','#dae8fc','#dae8fc','#dae8fc','#dae8fc','#c4d9f2',null  ],
-      ['#c4d9f2','#dae8fc','#7c3aed','#7c3aed','#7c3aed','#7c3aed','#7c3aed','#dae8fc','#c4d9f2',null  ],
-      ['#c4d9f2','#dae8fc','#dae8fc','#dae8fc','#dae8fc','#dae8fc','#dae8fc','#dae8fc','#c4d9f2',null  ],
-      [null,    '#c4d9f2','#c4d9f2','#c4d9f2','#c4d9f2','#c4d9f2','#c4d9f2','#c4d9f2',null,   null   ],
-      [null,    null,    null,    '#c4d9f2','#c4d9f2',null,   null,    null,    null,    null   ],
-      [null,    null,    '#c4d9f2','#c4d9f2',null,    null,    null,    null,    null,    null   ],
-      [null,    null,    null,    null,    null,    null,    null,    null,    null,    null   ],
-    ],
-  },
-  /* cat — footer signature */
-  cat: {
-    label: 'cat',
-    grid: [
-      [null,    '#FF8C00',null,    null,    null,    null,    null,    null,    '#FF8C00',null   ],
-      ['#FF8C00','#FFB347','#FF8C00',null,   null,    null,    null,   '#FF8C00','#FFB347','#FF8C00'],
-      ['#FF8C00','#222',   '#FF8C00','#FF8C00','#FF8C00','#FF8C00','#FF8C00','#FF8C00','#222',  '#FF8C00'],
-      [null,    '#FF8C00','#FF8C00','#FFB347','#FFB347','#FFB347','#FFB347','#FF8C00','#FF8C00',null   ],
-      [null,    null,     '#FF8C00','#FF8C00','#FF8C00','#FF8C00','#FF8C00','#FF8C00',null,    null   ],
-      [null,    '#FF8C00','#FF8C00','#FF8C00','#FF8C00','#FF8C00','#FF8C00','#FF8C00','#FF8C00',null   ],
-      [null,    '#FF8C00',null,     '#FF8C00','#FF8C00','#FF8C00','#FF8C00',null,    '#FF8C00',null   ],
-      [null,    null,     null,     '#E07B00',null,    null,     '#E07B00',null,    null,     null   ],
-      [null,    null,     null,     null,    null,    null,     null,    null,    null,     null   ],
-      [null,    null,     null,     null,    null,    null,     null,    null,    null,     null   ],
-    ],
-  },
-}
-
-function VoxelSprite({ name, className, size = 5 }: { name: string; className?: string; size?: number }) {
-  const sprite = SPRITES[name]
-  if (!sprite) return null
-  const cols = sprite.grid[0]?.length ?? 10
-  const rows = sprite.grid.length
-  return (
-    <div
-      className={`voxel-sprite ${className ?? ''}`}
-      aria-label={`Pixel art ${sprite.label}`}
-      role="img"
-      style={{
-        gridTemplateColumns: `repeat(${cols}, ${size}px)`,
-        gridTemplateRows: `repeat(${rows}, ${size}px)`,
-      }}
-    >
-      {sprite.grid.map((row, y) =>
-        row.map((color, x) =>
-          color ? (
-            <span
-              key={`${y}-${x}`}
-              className="vx"
-              style={{
-                gridRow: y + 1,
-                gridColumn: x + 1,
-                background: color,
-              }}
-            />
-          ) : null,
-        ),
-      )}
-    </div>
-  )
-}
-
 /* ── page ─────────────────────────────────────────── */
 
 export default function CVPage({ onBack }: Props) {
@@ -178,10 +25,8 @@ export default function CVPage({ onBack }: Props) {
         </div>
       </header>
 
-      <hr className="cv-divider" />
-
       {/* ── about ──────────────────────────────────── */}
-      <section className="cv-prose">
+      <section className="cv-section">
         <div className="cv-illustrated-section">
           <div className="cv-illustrated-text">
             <h2>About</h2>
@@ -204,16 +49,14 @@ export default function CVPage({ onBack }: Props) {
               Spanish to order coffee confidently.
             </p>
           </div>
-          <VoxelSprite name="cloud" size={6} className="cv-section-sprite cv-sprite-cloud" />
+          <CVSprite name="monitor" size={6} className="cv-section-sprite" />
         </div>
       </section>
 
-      <hr className="cv-divider" />
-
       {/* ── skills ─────────────────────────────────── */}
-      <section className="cv-prose">
+      <section className="cv-section">
         <div className="cv-illustrated-section">
-          <VoxelSprite name="toolbox" size={6} className="cv-section-sprite cv-sprite-toolbox" />
+          <CVSprite name="gears" size={6} className="cv-section-sprite" />
           <div className="cv-illustrated-text">
             <h2>What I work with</h2>
 
@@ -271,10 +114,8 @@ export default function CVPage({ onBack }: Props) {
         </div>
       </section>
 
-      <hr className="cv-divider" />
-
       {/* ── experience ─────────────────────────────── */}
-      <section className="cv-prose">
+      <section className="cv-section">
         <div className="cv-illustrated-section">
           <div className="cv-illustrated-text">
             <h2>Experience</h2>
@@ -339,16 +180,14 @@ export default function CVPage({ onBack }: Props) {
               </p>
             </article>
           </div>
-          <VoxelSprite name="rocket" size={6} className="cv-section-sprite cv-sprite-rocket" />
+          <CVSprite name="rack" size={6} className="cv-section-sprite" />
         </div>
       </section>
 
-      <hr className="cv-divider" />
-
       {/* ── side projects ──────────────────────────── */}
-      <section className="cv-prose">
+      <section className="cv-section">
         <div className="cv-illustrated-section">
-          <VoxelSprite name="flask" size={6} className="cv-section-sprite cv-sprite-flask" />
+          <CVSprite name="flask" size={6} className="cv-section-sprite" />
           <div className="cv-illustrated-text">
             <h2>Independent projects</h2>
             <p>
@@ -361,10 +200,8 @@ export default function CVPage({ onBack }: Props) {
         </div>
       </section>
 
-      <hr className="cv-divider" />
-
       {/* ── education & certs ──────────────────────── */}
-      <section className="cv-prose cv-edu-section">
+      <section className="cv-section cv-edu-section">
         <div className="cv-illustrated-section">
           <div className="cv-illustrated-text">
             <h2>Education &amp; certification</h2>
@@ -381,16 +218,14 @@ export default function CVPage({ onBack }: Props) {
               <span className="cv-edu-when">Jan 2023</span>
             </div>
           </div>
-          <VoxelSprite name="grad" size={6} className="cv-section-sprite cv-sprite-grad" />
+          <CVSprite name="scroll" size={6} className="cv-section-sprite" />
         </div>
       </section>
 
-      <hr className="cv-divider" />
-
       {/* ── manager quotes ─────────────────────────── */}
-      <section className="cv-prose cv-quotes">
+      <section className="cv-section cv-quotes">
         <div className="cv-illustrated-section">
-          <VoxelSprite name="speech" size={6} className="cv-section-sprite cv-sprite-speech" />
+          <CVSprite name="quotes" size={6} className="cv-section-sprite" />
           <div className="cv-illustrated-text">
             <h2>From my manager's review</h2>
             <div className="cv-quote-grid">
@@ -404,7 +239,7 @@ export default function CVPage({ onBack }: Props) {
       </section>
 
       <footer className="cv-footer">
-        <VoxelSprite name="cat" size={5} className="cv-footer-sprite cv-sprite-cat" />
+        <CVSprite name="cat" size={5} className="cv-footer-sprite" />
       </footer>
     </div>
   )
