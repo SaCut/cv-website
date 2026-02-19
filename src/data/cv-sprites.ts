@@ -87,72 +87,75 @@ const monitorF3: Frame = [
   [_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _],
 ]
 
-/* ── 2. LIGHTNING BOLT — Skills section ─────────── */
-/* Pulses: normal → bright flash → dim */
+/* ── 2. WRENCH & NUT — Skills section ───────────── */
+/* Top-down: open-end wrench curving around a hex nut       */
+/* Handle rocks ±1 px around nut centre (the fulcrum)       */
 
-const LT_YEL = '#fbbf24'
-const LT_BRI = '#fef9c3'
-const LT_DRK = '#b45309'
-const LT_DIM = '#78350f'
+const C1 = '#e2e8f0'   // chrome highlight
+const C2 = '#cbd5e1'   // chrome light
+const C3 = '#94a3b8'   // chrome body
+const C4 = '#64748b'   // chrome shadow
+const C5 = '#374151'   // dark edge
+const C6 = '#000000'   // bolt hole
 
-// Frame 1: normal charge
+// Frame 1 — centre position (hand-drawn reference)
 const gearsF1: Frame = [
-  [  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _],
-  [  _,  _,  _,  _,  _,  _,LT_BRI,LT_YEL,LT_YEL,LT_YEL,LT_YEL,  _,  _,  _,  _,  _],
-  [  _,  _,  _,  _,  _,LT_BRI,LT_YEL,LT_YEL,LT_YEL,LT_YEL,  _,  _,  _,  _,  _,  _],
-  [  _,  _,  _,  _,LT_BRI,LT_YEL,LT_YEL,LT_YEL,LT_YEL,  _,  _,  _,  _,  _,  _,  _],
-  [  _,  _,  _,LT_BRI,LT_YEL,LT_YEL,LT_YEL,LT_YEL,LT_YEL,LT_YEL,LT_YEL,LT_YEL,  _,  _,  _,  _],
-  [  _,  _,  _,LT_YEL,LT_YEL,LT_YEL,LT_YEL,LT_YEL,LT_YEL,LT_YEL,LT_DRK,  _,  _,  _,  _,  _],
-  [  _,  _,  _,  _,  _,  _,LT_YEL,LT_YEL,LT_YEL,LT_DRK,  _,  _,  _,  _,  _,  _],
-  [  _,  _,  _,  _,  _,LT_YEL,LT_YEL,LT_YEL,LT_DRK,  _,  _,  _,  _,  _,  _,  _],
-  [  _,  _,  _,  _,LT_YEL,LT_YEL,LT_YEL,LT_DRK,  _,  _,  _,  _,  _,  _,  _,  _],
-  [  _,  _,  _,LT_YEL,LT_YEL,LT_YEL,LT_DRK,  _,  _,  _,  _,  _,  _,  _,  _,  _],
-  [  _,  _,LT_YEL,LT_YEL,LT_YEL,LT_DRK,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _],
-  [  _,  _,LT_YEL,LT_DRK,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _],
-  [  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _],
-  [  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _],
-  [  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _],
-  [  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _],
+  [ _, _, _, _, _, C1, C1, C1, C1, _, _, _, _, _, _, _],
+  [ _, _, _, C1, C1, C2, C2, C2, C3, _, _, _, _, _, _, _],
+  [ _, _, C1, C1, C2, C2, C2, C3, _, C1, C1, C1, _, _, _, _],
+  [ _, _, C1, C2, C2, C2, C3, _, C1, C1, C1, C2, C2, _, _, _],
+  [ _, C1, C2, C2, C2, C3, _, C1, C1, C4, C5, C4, C2, C3, _, _],
+  [ _, C1, C2, C2, C2, C3, _, C2, C2, C5, C6, C5, C2, C3, _, _],
+  [ _, C1, C2, C2, C2, C3, _, C2, C2, C4, C5, C4, C3, C4, _, _],
+  [ _, C2, C2, C2, C3, C3, C3, _, C3, C2, C3, C3, C4, _, C4, _],
+  [ _, C2, C2, C2, C3, C3, C3, C3, _, C4, C4, C4, _, C4, C5, _],
+  [ _, C2, C2, C2, C3, C3, C3, C3, C4, _, _, _, C4, C4, C5, _],
+  [C2, C2, C2, C2, C3, C3, C3, C4, C4, C4, C4, C4, C4, C5, _, _],
+  [C2, C2, C2, C2, C3, C3, C4, C4, C4, C4, C4, C5, C5, _, _, _],
+  [C2, C2, C2, C3, C3, C3, C4, C4, C4, C5, C5, C5, _, _, _, _],
+  [C2, C2, C2, C3, C3, C4, C4, C5, C5, C5, _, _, _, _, _, _],
+  [ _, C2, C3, C3, C4, C4, C4, C5, _, _, _, _, _, _, _, _],
+  [ _, _, C3, C4, C4, C5, C5, _, _, _, _, _, _, _, _, _],
 ]
 
-// Frame 2: gentle warm glow (no harsh white)
+// Frame 2 — nut face highlight rotated (wrench stays still)
 const gearsF2: Frame = [
-  [  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _],
-  [  _,  _,  _,  _,  _,  _,LT_BRI,LT_BRI,LT_BRI,LT_BRI,LT_YEL,  _,  _,  _,  _,  _],
-  [  _,  _,  _,  _,  _,LT_BRI,LT_BRI,LT_BRI,LT_BRI,LT_YEL,  _,  _,  _,  _,  _,  _],
-  [  _,  _,  _,  _,LT_BRI,LT_BRI,LT_BRI,LT_BRI,LT_YEL,  _,  _,  _,  _,  _,  _,  _],
-  [  _,  _,  _,LT_BRI,LT_BRI,LT_BRI,LT_BRI,LT_BRI,LT_BRI,LT_BRI,LT_BRI,LT_YEL,  _,  _,  _,  _],
-  [  _,  _,  _,LT_YEL,LT_BRI,LT_BRI,LT_BRI,LT_BRI,LT_BRI,LT_BRI,LT_DRK,  _,  _,  _,  _,  _],
-  [  _,  _,  _,  _,  _,  _,LT_YEL,LT_BRI,LT_BRI,LT_DRK,  _,  _,  _,  _,  _,  _],
-  [  _,  _,  _,  _,  _,LT_YEL,LT_BRI,LT_BRI,LT_DRK,  _,  _,  _,  _,  _,  _,  _],
-  [  _,  _,  _,  _,LT_YEL,LT_BRI,LT_BRI,LT_DRK,  _,  _,  _,  _,  _,  _,  _,  _],
-  [  _,  _,  _,LT_YEL,LT_BRI,LT_BRI,LT_DRK,  _,  _,  _,  _,  _,  _,  _,  _,  _],
-  [  _,  _,LT_YEL,LT_BRI,LT_BRI,LT_DRK,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _],
-  [  _,  _,LT_YEL,LT_DRK,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _],
-  [  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _],
-  [  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _],
-  [  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _],
-  [  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _],
+  [ _, _, _, _, _, C1, C1, C1, C1, _, _, _, _, _, _, _],
+  [ _, _, _, C1, C1, C2, C2, C2, C3, _, _, _, _, _, _, _],
+  [ _, _, C1, C1, C2, C2, C2, C3, _, C1, C1, C1, _, _, _, _],
+  [ _, _, C1, C2, C2, C2, C3, _, C2, C2, C1, C1, C1, _, _, _],
+  [ _, C1, C2, C2, C2, C3, _, C3, C2, C4, C5, C4, C1, C1, _, _],
+  [ _, C1, C2, C2, C2, C3, _, C3, C2, C5, C6, C5, C2, C2, _, _],
+  [ _, C1, C2, C2, C2, C3, _, C4, C3, C4, C5, C4, C2, C2, _, _],
+  [ _, C2, C2, C2, C3, C3, C3, _, C3, C2, C3, C3, C4, _, C4, _],
+  [ _, C2, C2, C2, C3, C3, C3, C3, _, C4, C4, C4, _, C4, C5, _],
+  [ _, C2, C2, C2, C3, C3, C3, C3, C4, _, _, _, C4, C4, C5, _],
+  [C2, C2, C2, C2, C3, C3, C3, C4, C4, C4, C4, C4, C4, C5, _, _],
+  [C2, C2, C2, C2, C3, C3, C4, C4, C4, C4, C4, C5, C5, _, _, _],
+  [C2, C2, C2, C3, C3, C3, C4, C4, C4, C5, C5, C5, _, _, _, _],
+  [C2, C2, C2, C3, C3, C4, C4, C5, C5, C5, _, _, _, _, _, _],
+  [ _, C2, C3, C3, C4, C4, C4, C5, _, _, _, _, _, _, _, _],
+  [ _, _, C3, C4, C4, C5, C5, _, _, _, _, _, _, _, _, _],
 ]
 
-// Frame 3: dim (post-flash)
+// Frame 3 — same as frame 1 (back-and-forth nut rotation)
 const gearsF3: Frame = [
-  [  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _],
-  [  _,  _,  _,  _,  _,  _,LT_YEL,LT_DRK,LT_DRK,LT_DRK,LT_DRK,  _,  _,  _,  _,  _],
-  [  _,  _,  _,  _,  _,LT_YEL,LT_DRK,LT_DRK,LT_DRK,LT_DRK,  _,  _,  _,  _,  _,  _],
-  [  _,  _,  _,  _,LT_YEL,LT_DRK,LT_DRK,LT_DRK,LT_DRK,  _,  _,  _,  _,  _,  _,  _],
-  [  _,  _,  _,LT_YEL,LT_DRK,LT_DRK,LT_DRK,LT_DRK,LT_DRK,LT_DRK,LT_DRK,LT_DRK,  _,  _,  _,  _],
-  [  _,  _,  _,LT_DRK,LT_DRK,LT_DRK,LT_DRK,LT_DRK,LT_DRK,LT_DRK,LT_DIM,  _,  _,  _,  _,  _],
-  [  _,  _,  _,  _,  _,  _,LT_DRK,LT_DRK,LT_DRK,LT_DIM,  _,  _,  _,  _,  _,  _],
-  [  _,  _,  _,  _,  _,LT_DRK,LT_DRK,LT_DRK,LT_DIM,  _,  _,  _,  _,  _,  _,  _],
-  [  _,  _,  _,  _,LT_DRK,LT_DRK,LT_DRK,LT_DIM,  _,  _,  _,  _,  _,  _,  _,  _],
-  [  _,  _,  _,LT_DRK,LT_DRK,LT_DRK,LT_DIM,  _,  _,  _,  _,  _,  _,  _,  _,  _],
-  [  _,  _,LT_DRK,LT_DRK,LT_DRK,LT_DIM,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _],
-  [  _,  _,LT_DRK,LT_DIM,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _],
-  [  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _],
-  [  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _],
-  [  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _],
-  [  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _],
+  [ _, _, _, _, _, C1, C1, C1, C1, _, _, _, _, _, _, _],
+  [ _, _, _, C1, C1, C2, C2, C2, C3, _, _, _, _, _, _, _],
+  [ _, _, C1, C1, C2, C2, C2, C3, _, C1, C1, C1, _, _, _, _],
+  [ _, _, C1, C2, C2, C2, C3, _, C1, C1, C1, C2, C2, _, _, _],
+  [ _, C1, C2, C2, C2, C3, _, C1, C1, C4, C5, C4, C2, C3, _, _],
+  [ _, C1, C2, C2, C2, C3, _, C2, C2, C5, C6, C5, C2, C3, _, _],
+  [ _, C1, C2, C2, C2, C3, _, C2, C2, C4, C5, C4, C3, C4, _, _],
+  [ _, C2, C2, C2, C3, C3, C3, _, C3, C2, C3, C3, C4, _, C4, _],
+  [ _, C2, C2, C2, C3, C3, C3, C3, _, C4, C4, C4, _, C4, C5, _],
+  [ _, C2, C2, C2, C3, C3, C3, C3, C4, _, _, _, C4, C4, C5, _],
+  [C2, C2, C2, C2, C3, C3, C3, C4, C4, C4, C4, C4, C4, C5, _, _],
+  [C2, C2, C2, C2, C3, C3, C4, C4, C4, C4, C4, C5, C5, _, _, _],
+  [C2, C2, C2, C3, C3, C3, C4, C4, C4, C5, C5, C5, _, _, _, _],
+  [C2, C2, C2, C3, C3, C4, C4, C5, C5, C5, _, _, _, _, _, _],
+  [ _, C2, C3, C3, C4, C4, C4, C5, _, _, _, _, _, _, _, _],
+  [ _, _, C3, C4, C4, C5, C5, _, _, _, _, _, _, _, _, _],
 ]
 
 
@@ -492,7 +495,7 @@ const catF3: Frame = [
 
 export const CV_SPRITES: Record<string, CVSpriteData> = {
   monitor:  { label: 'terminal',     frames: [monitorBase, monitorF2, monitorF3], interval: 800 },
-  gears:    { label: 'lightning',    frames: [gearsF1, gearsF2, gearsF3],         interval: 900 },
+  gears:    { label: 'wrench',       frames: [gearsF1, gearsF2, gearsF3],         interval: 700 },
   rack:     { label: 'server rack',  frames: [rackF1, rackF2, rackF3],            interval: 900 },
   flask:    { label: 'flask',        frames: [flaskF1, flaskF2, flaskF3],          interval: 700 },
   scroll:   { label: 'scroll',       frames: [scrollF1, scrollF2, scrollF3],       interval: 1200 },

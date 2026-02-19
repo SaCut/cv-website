@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>16×16 Pixel Sprite Editor</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: system-ui, sans-serif;
+        background: #1e1e2e;
+        color: #cdd6f4;
+        display: flex;
+        height: 100vh;
+      }
+
+      /* Grid */
+      .editor {
+        display: flex;
+        gap: 24px;
+        padding: 24px;
+        align-items: flex-start;
+      }
+      .grid-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(16, 32px);
+        grid-template-rows: repeat(16, 32px);
+        gap: 1px;
+        background: #313244;
+        border: 2px solid #585b70;
+        cursor: crosshair;
+        user-select: none;
+      }
+      .cell {
+        width: 32px;
+        height: 32px;
+        background: transparent;
+        transition: background 0.05s;
+        position: relative;
+      }
+      .cell:hover {
+        outline: 2px solid #f5c2e7;
+        outline-offset: -2px;
+      }
+      .cell.has-color {
+      }
+
+      /* Checkerboard for transparent cells */
+      .cell::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: repeating-conic-gradient(#45475a 0% 25%, #313244 0% 50%) 0
+          0 / 16px 16px;
+        z-index: 0;
+      }
+      .cell .fill {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+      }
+
+      /* Sidebar */
+      .sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        min-width: 220px;
+      }
+      .sidebar h2 {
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #a6adc8;
+      }
+
+      .current-color {
+        width: 48px;
+        height: 48px;
+        border: 2px solid #585b70;
+        border-radius: 6px;
+      }
+      .color-input-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .color-input-row input[type="color"] {
+        width: 40px;
+        height: 32px;
+        border: none;
+        background: none;
+        cursor: pointer;
+      }
+      .color-input-row input[type="text"] {
+        width: 90px;
+        padding: 4px 8px;
+        background: #313244;
+        border: 1px solid #585b70;
+        border-radius: 4px;
+        color: #cdd6f4;
+        font-family: monospace;
+        font-size: 13px;
+      }
+
+      .palette {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+      .swatch {
+        width: 28px;
+        height: 28px;
+        border-radius: 4px;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: border-color 0.1s;
+      }
+      .swatch:hover,
+      .swatch.active {
+        border-color: #f5c2e7;
+      }
+      .swatch.eraser {
+        background: repeating-conic-gradient(#45475a 0% 25%, #313244 0% 50%) 0
+          0 / 14px 14px;
+        position: relative;
+      }
+      .swatch.eraser::after {
+        content: "✕";
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #f38ba8;
+        font-size: 16px;
+        font-weight: bold;
+      }
+
+      .btn {
+        padding: 8px 16px;
+        border: 1px solid #585b70;
+        background: #313244;
+        color: #cdd6f4;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        transition: background 0.1s;
+      }
+      .btn:hover {
+        background: #45475a;
+      }
+      .btn.primary {
+        background: #89b4fa;
+        color: #1e1e2e;
+        border-color: #89b4fa;
+      }
+      .btn.primary:hover {
+        background: #74c7ec;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      /* Output */
+      .output-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .output {
+        width: 100%;
+        min-height: 200px;
+        max-height: 400px;
+        overflow: auto;
+        background: #181825;
+        border: 1px solid #585b70;
+        border-radius: 6px;
+        padding: 8px;
+        font-family: monospace;
+        font-size: 11px;
+        color: #a6e3a1;
+        white-space: pre;
+        tab-size: 2;
+        resize: vertical;
+      }
+
+      /* Preview */
+      .preview-section {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .preview {
+        display: grid;
+        grid-template-columns: repeat(16, 6px);
+        grid-template-rows: repeat(16, 6px);
+        gap: 0;
+        background: #1e1e2e;
+        border: 1px solid #585b70;
+        border-radius: 4px;
+        padding: 4px;
+        width: fit-content;
+      }
+      .preview .px {
+        width: 6px;
+        height: 6px;
+      }
+
+      .coord {
+        position: absolute;
+        bottom: 1px;
+        right: 2px;
+        font-size: 7px;
+        color: #585b70;
+        z-index: 2;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="editor">
+      <!-- Grid -->
+      <div class="grid-wrap">
+        <div class="grid" id="grid"></div>
+        <div style="font-size: 11px; color: #6c7086">
+          Click to paint · Right-click to erase · Hold to drag-paint
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div>
+          <h2>Current Colour</h2>
+          <div class="color-input-row" style="margin-top: 8px">
+            <div class="current-color" id="currentSwatch"></div>
+            <input type="color" id="colorPicker" value="#94a3b8" />
+            <input
+              type="text"
+              id="hexInput"
+              value="#94a3b8"
+              maxlength="7"
+              spellcheck="false" />
+          </div>
+        </div>
+
+        <div>
+          <h2>Palette</h2>
+          <div class="palette" id="palette"></div>
+        </div>
+
+        <div>
+          <h2>Custom Colours (used)</h2>
+          <div class="palette" id="usedColors"></div>
+        </div>
+
+        <div class="actions">
+          <button class="btn" onclick="clearGrid()">Clear All</button>
+          <button class="btn" onclick="fillAll()">Fill All</button>
+          <button class="btn" onclick="mirrorH()">Mirror ↔</button>
+        </div>
+
+        <div class="preview-section">
+          <h2>Preview (6px actual size)</h2>
+          <div class="preview" id="preview"></div>
+        </div>
+
+        <div class="output-wrap">
+          <div style="display: flex; gap: 8px; align-items: center">
+            <h2>TypeScript Output</h2>
+            <button class="btn primary" onclick="copyOutput()">Copy</button>
+          </div>
+          <div class="output" id="output"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const GRID_SIZE = 16
+      const grid = document.getElementById("grid")
+      const preview = document.getElementById("preview")
+      const output = document.getElementById("output")
+      const colorPicker = document.getElementById("colorPicker")
+      const hexInput = document.getElementById("hexInput")
+      const currentSwatch = document.getElementById("currentSwatch")
+      const paletteEl = document.getElementById("palette")
+      const usedColorsEl = document.getElementById("usedColors")
+
+      let currentColor = "#94a3b8" // null means eraser
+      let isEraser = false
+      let painting = false
+      let erasing = false
+
+      // Grid state: 16x16 of hex string or null
+      const cells = Array.from({ length: GRID_SIZE }, () =>
+        Array(GRID_SIZE).fill(null),
+      )
+
+      // Default palette
+      const defaultPalette = [
+        null, // eraser
+        "#e2e8f0",
+        "#cbd5e1",
+        "#94a3b8",
+        "#64748b",
+        "#374151",
+        "#1e293b",
+        "#fbbf24",
+        "#f59e0b",
+        "#d97706",
+        "#b45309",
+        "#78350f",
+        "#4ade80",
+        "#22c55e",
+        "#16a34a",
+        "#3b82f6",
+        "#60a5fa",
+        "#2563eb",
+        "#f87171",
+        "#ef4444",
+        "#dc2626",
+        "#a78bfa",
+        "#8b5cf6",
+        "#fb7185",
+        "#f472b6",
+        "#ffffff",
+        "#000000",
+      ]
+
+      // Track used colours
+      const usedColors = new Set()
+
+      function setColor(hex) {
+        isEraser = hex === null
+        currentColor = hex
+        currentSwatch.style.background =
+          hex ||
+          "repeating-conic-gradient(#45475a 0% 25%, #313244 0% 50%) 0 0 / 14px 14px"
+        if (hex) {
+          colorPicker.value = hex
+          hexInput.value = hex
+        }
+        renderPalette()
+      }
+
+      function renderPalette() {
+        paletteEl.innerHTML = ""
+        defaultPalette.forEach((c) => {
+          const s = document.createElement("div")
+          s.className =
+            "swatch" +
+            (c === null ? " eraser" : "") +
+            ((c === currentColor && !isEraser) || (c === null && isEraser)
+              ? " active"
+              : "")
+          if (c) s.style.background = c
+          s.onclick = () => setColor(c)
+          paletteEl.appendChild(s)
+        })
+
+        usedColorsEl.innerHTML = ""
+        usedColors.forEach((c) => {
+          if (defaultPalette.includes(c)) return
+          const s = document.createElement("div")
+          s.className =
+            "swatch" + (c === currentColor && !isEraser ? " active" : "")
+          s.style.background = c
+          s.onclick = () => setColor(c)
+          usedColorsEl.appendChild(s)
+        })
+      }
+
+      colorPicker.addEventListener("input", (e) => {
+        hexInput.value = e.target.value
+        setColor(e.target.value)
+      })
+      hexInput.addEventListener("change", (e) => {
+        let v = e.target.value.trim()
+        if (!v.startsWith("#")) v = "#" + v
+        if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+          colorPicker.value = v
+          setColor(v)
+        }
+      })
+
+      function paintCell(r, c, color) {
+        cells[r][c] = color
+        if (color) usedColors.add(color)
+        renderCell(r, c)
+        updatePreview()
+        updateOutput()
+      }
+
+      function renderCell(r, c) {
+        const el = grid.children[r * GRID_SIZE + c]
+        const fill = el.querySelector(".fill")
+        fill.style.background = cells[r][c] || "transparent"
+      }
+
+      function buildGrid() {
+        grid.innerHTML = ""
+        for (let r = 0; r < GRID_SIZE; r++) {
+          for (let c = 0; c < GRID_SIZE; c++) {
+            const cell = document.createElement("div")
+            cell.className = "cell"
+            cell.dataset.r = r
+            cell.dataset.c = c
+
+            const fill = document.createElement("div")
+            fill.className = "fill"
+            cell.appendChild(fill)
+
+            cell.addEventListener("mousedown", (e) => {
+              e.preventDefault()
+              if (e.button === 2) {
+                erasing = true
+                paintCell(r, c, null)
+              } else {
+                painting = true
+                paintCell(r, c, isEraser ? null : currentColor)
+              }
+            })
+            cell.addEventListener("mouseenter", () => {
+              if (painting) paintCell(r, c, isEraser ? null : currentColor)
+              if (erasing) paintCell(r, c, null)
+            })
+            cell.addEventListener("contextmenu", (e) => e.preventDefault())
+
+            grid.appendChild(cell)
+          }
+        }
+      }
+
+      document.addEventListener("mouseup", () => {
+        painting = false
+        erasing = false
+      })
+
+      function buildPreview() {
+        preview.innerHTML = ""
+        for (let r = 0; r < GRID_SIZE; r++) {
+          for (let c = 0; c < GRID_SIZE; c++) {
+            const px = document.createElement("div")
+            px.className = "px"
+            px.dataset.r = r
+            px.dataset.c = c
+            preview.appendChild(px)
+          }
+        }
+      }
+
+      function updatePreview() {
+        for (let r = 0; r < GRID_SIZE; r++) {
+          for (let c = 0; c < GRID_SIZE; c++) {
+            const px = preview.children[r * GRID_SIZE + c]
+            px.style.background = cells[r][c] || "transparent"
+          }
+        }
+      }
+
+      function updateOutput() {
+        // Collect unique colours
+        const colors = new Set()
+        cells.forEach((row) =>
+          row.forEach((c) => {
+            if (c) colors.add(c)
+          }),
+        )
+
+        // Build alias map: first 2 get short names, rest get C3, C4...
+        const aliases = {}
+        let idx = 1
+        colors.forEach((c) => {
+          aliases[c] = "C" + idx++
+        })
+
+        let lines = "// Colour aliases\nconst _ = null\n"
+        for (const [hex, alias] of Object.entries(aliases)) {
+          lines += `const ${alias} = '${hex}'\n`
+        }
+
+        lines += "\nconst frame: (string | null)[][] = [\n"
+        for (let r = 0; r < GRID_SIZE; r++) {
+          const row = cells[r].map((c) => {
+            if (c === null) return " _"
+            return " " + aliases[c]
+          })
+          lines += "  [" + row.join(",") + "],\n"
+        }
+        lines += "]\n"
+
+        output.textContent = lines
+      }
+
+      function clearGrid() {
+        for (let r = 0; r < GRID_SIZE; r++)
+          for (let c = 0; c < GRID_SIZE; c++) {
+            cells[r][c] = null
+            renderCell(r, c)
+          }
+        updatePreview()
+        updateOutput()
+      }
+
+      function fillAll() {
+        if (isEraser) return
+        for (let r = 0; r < GRID_SIZE; r++)
+          for (let c = 0; c < GRID_SIZE; c++) {
+            cells[r][c] = currentColor
+            renderCell(r, c)
+          }
+        usedColors.add(currentColor)
+        updatePreview()
+        updateOutput()
+      }
+
+      function mirrorH() {
+        for (let r = 0; r < GRID_SIZE; r++)
+          for (let c = 0; c < Math.floor(GRID_SIZE / 2); c++) {
+            const mirrorC = GRID_SIZE - 1 - c
+            cells[r][mirrorC] = cells[r][c]
+            renderCell(r, mirrorC)
+          }
+        updatePreview()
+        updateOutput()
+      }
+
+      function copyOutput() {
+        navigator.clipboard.writeText(output.textContent).then(() => {
+          const btn = document.querySelector(".btn.primary")
+          btn.textContent = "Copied!"
+          setTimeout(() => (btn.textContent = "Copy"), 1200)
+        })
+      }
+
+      // Init
+      setColor("#94a3b8")
+      buildGrid()
+      buildPreview()
+      updateOutput()
+    </script>
+  </body>
+</html>
