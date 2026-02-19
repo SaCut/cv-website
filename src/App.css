@@ -1014,10 +1014,6 @@ a:hover { text-decoration: underline; }
   margin-top: 0.5rem;
 }
 
-.cv-footer-sprite {
-  opacity: 0.35;
-}
-
 /* illustrated sections: sprite + text side by side */
 .cv-illustrated-section {
   display: flex;
@@ -1276,15 +1272,6 @@ a:hover { text-decoration: underline; }
   border-radius: 12px;
   border-left: 3px solid var(--accent);
   margin: 0;
-}
-
-/* ── footer ─── */
-
-.cv-footer {
-  display: flex;
-  justify-content: center;
-  margin-top: 2rem;
-  padding: 1rem;
 }
 
 /* ─── responsive ──────────────────────────────────── */

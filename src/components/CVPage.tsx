@@ -238,9 +238,7 @@ export default function CVPage({ onBack }: Props) {
         </div>
       </section>
 
-      <footer className="cv-footer">
-        <CVSprite name="cat" size={5} className="cv-footer-sprite" />
-      </footer>
+
     </div>
   )
 }
