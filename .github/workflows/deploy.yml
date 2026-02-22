@@ -76,30 +76,15 @@ jobs:
 
       - name: Write kubeconfig
         run: |
-          mkdir -p ~/.kube
-          # Build a minimal kubeconfig using the deployer service account token.
-          # Client-cert auth does not work through the Cloudflare Tunnel (TLS is
-          # terminated at the edge), so we use a bearer token instead.
-          cat > ~/.kube/config <<EOF
-          apiVersion: v1
-          kind: Config
-          clusters:
-          - cluster:
-              server: https://k3s.saveriocutrupi.com
-              insecure-skip-tls-verify: true
-            name: k3s
-          contexts:
-          - context:
-              cluster: k3s
-              user: deployer
-            name: k3s
-          current-context: k3s
-          users:
-          - name: deployer
-            user:
-              token: ${{ secrets.K3S_DEPLOY_TOKEN }}
-          EOF
-          chmod 600 ~/.kube/config
+          kubectl config set-cluster k3s \
+            --server=https://k3s.saveriocutrupi.com \
+            --insecure-skip-tls-verify=true
+          kubectl config set-credentials deployer \
+            --token="${{ secrets.K3S_DEPLOY_TOKEN }}"
+          kubectl config set-context k3s \
+            --cluster=k3s \
+            --user=deployer
+          kubectl config use-context k3s
 
       - name: Apply manifests and roll out
         run: |
