@@ -3,6 +3,9 @@ main = "src/index.ts"
 compatibility_date = "2024-12-01"
 account_id = "fef56216bdc9170ef025d7a2b4cab612"
 
+[triggers]
+crons = ["*/10 * * * *"]
+
 [vars]
 # Set your GitHub PAT as a secret instead:
 #   wrangler secret put GITHUB_TOKEN

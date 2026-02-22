@@ -19,7 +19,7 @@ interface Env {
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 }
 
@@ -447,7 +447,7 @@ function buildAnimFrames(
    ═══════════════════════════════════════════════════════ */
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: CORS })
     }
@@ -607,97 +607,341 @@ export default {
       }
     }
 
-    // -- Endpoint 3: Live infra status (read-only k3s proxy) --
-    if (request.method === 'GET' && url.pathname === '/infra-status') {
-      return fetchInfraStatus(env)
+    // -- Endpoint 3: Create creature deployment --
+    if (request.method === 'POST' && url.pathname === '/k8s/deploy') {
+      return handleCreatureDeploy(request, env)
+    }
+
+    // -- Endpoint 4: Get creature pod status --
+    if (request.method === 'GET' && url.pathname === '/k8s/pods') {
+      const deployment = url.searchParams.get('deployment')
+      if (!deployment) {
+        return Response.json({ error: 'Missing deployment parameter' }, { status: 400, headers: CORS })
+      }
+      // Piggyback cleanup as a background task — doesn't add latency
+      ctx.waitUntil(cleanupOldDeployments(env))
+      return handleCreaturePods(deployment, env)
+    }
+
+    // -- Endpoint 5: Tear down creature deployment --
+    if (request.method === 'DELETE' && url.pathname.startsWith('/k8s/deploy/')) {
+      const name = url.pathname.slice('/k8s/deploy/'.length)
+      if (!name) {
+        return Response.json({ error: 'Missing deployment name' }, { status: 400, headers: CORS })
+      }
+      return handleCreatureTeardown(name, env)
+    }
+
+    // -- Endpoint 6: Get pod CPU/mem metrics --
+    if (request.method === 'GET' && url.pathname === '/k8s/pod-metrics') {
+      const deployment = url.searchParams.get('deployment')
+      if (!deployment) {
+        return Response.json({ error: 'Missing deployment parameter' }, { status: 400, headers: CORS })
+      }
+      return handlePodMetrics(deployment, env)
+    }
+
+    // -- Endpoint 7: Restart (delete) a single pod --
+    if (request.method === 'DELETE' && url.pathname.startsWith('/k8s/pods/')) {
+      const podName = url.pathname.slice('/k8s/pods/'.length)
+      if (!podName) {
+        return Response.json({ error: 'Missing pod name' }, { status: 400, headers: CORS })
+      }
+      return handlePodRestart(podName, env)
     }
 
     return new Response('Not found', { status: 404, headers: CORS })
   },
+
+  async scheduled(_event: ScheduledEvent, env: Env): Promise<void> {
+    await cleanupOldDeployments(env)
+  },
 }
 
 /* ═══════════════════════════════════════════════════════
-   K3S INFRA STATUS
+   K8S CREATURE DEPLOYMENT
    ═══════════════════════════════════════════════════════ */
 
-/** Fetch read-only cluster status from k3s and return a minimal summary. */
-async function fetchInfraStatus(env: Env): Promise<Response> {
-  const headers = {
+const CREATURES_NS = 'creatures'
+const MAX_PODS_IN_NAMESPACE = 30
+const MAX_REPLICAS = 6
+const POD_TTL_SECONDS = 600 // 10 minutes
+
+function sanitizeName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 40)
+}
+
+function k8sHeaders(env: Env): Record<string, string> {
+  return {
     Authorization: `Bearer ${env.K3S_TOKEN}`,
+    'Content-Type': 'application/json',
   }
+}
 
+async function k8sFetch(env: Env, path: string, init?: RequestInit): Promise<Response> {
+  return fetch(`${env.K3S_API_URL}${path}`, {
+    ...init,
+    headers: { ...k8sHeaders(env), ...(init?.headers || {}) },
+    // @ts-expect-error -- Cloudflare-specific fetch option
+    cf: { cacheTtl: 0 },
+  })
+}
+
+/** Count running pods in the creatures namespace. */
+async function countPods(env: Env): Promise<number> {
+  const res = await k8sFetch(env, `/api/v1/namespaces/${CREATURES_NS}/pods`)
+  if (!res.ok) return 0
+  const data = (await res.json()) as any
+  return (data.items || []).length
+}
+
+/** Clean up deployments older than TTL. Runs lazily on each request. */
+async function cleanupOldDeployments(env: Env): Promise<void> {
+  const res = await k8sFetch(
+    env,
+    `/apis/apps/v1/namespaces/${CREATURES_NS}/deployments?labelSelector=app=creature`,
+  )
+  if (!res.ok) return
+
+  const data = (await res.json()) as any
+  const now = Date.now()
+
+  for (const dep of data.items || []) {
+    const created = dep.metadata?.labels?.['created-at']
+    if (created && now - Number(created) * 1000 > POD_TTL_SECONDS * 1000) {
+      await k8sFetch(env, `/apis/apps/v1/namespaces/${CREATURES_NS}/deployments/${dep.metadata.name}`, {
+        method: 'DELETE',
+      })
+    }
+  }
+}
+
+/** POST /k8s/deploy — create a creature deployment. */
+async function handleCreatureDeploy(request: Request, env: Env): Promise<Response> {
   try {
-    const [deployRes, podRes] = await Promise.all([
-      fetch(`${env.K3S_API_URL}/apis/apps/v1/namespaces/default/deployments/cv-website`, {
-        headers,
-        // k3s uses a self-signed cert
-        // @ts-expect-error -- Cloudflare-specific fetch option
-        cf: { cacheTtl: 0 },
-      }),
-      fetch(`${env.K3S_API_URL}/api/v1/namespaces/default/pods?labelSelector=app=cv-website`, {
-        headers,
-        // @ts-expect-error -- Cloudflare-specific fetch option
-        cf: { cacheTtl: 0 },
-      }),
-    ])
+    const body = (await request.json()) as any
+    const rawName = String(body.name || '').trim()
+    const replicas = Math.min(Math.max(Number(body.replicas) || 1, 1), MAX_REPLICAS)
+    const strategy = body.strategy === 'Recreate' ? 'Recreate' : 'RollingUpdate'
 
-    // If the deployment doesn't exist yet, return a "not deployed" status
-    if (deployRes.status === 404) {
+    if (!rawName) {
+      return Response.json({ error: 'Missing creature name' }, { status: 400, headers: CORS })
+    }
+
+    // Lazy cleanup before creating new
+    await cleanupOldDeployments(env)
+
+    // Check capacity
+    const podCount = await countPods(env)
+    if (podCount + replicas > MAX_PODS_IN_NAMESPACE) {
       return Response.json(
-        { status: 'not-deployed', pods: [], message: 'Deployment not found' },
-        { headers: { ...CORS, 'Cache-Control': 'public, max-age=30' } },
+        { error: `Cluster is busy — ${podCount} pods running. Try fewer replicas or wait.` },
+        { status: 429, headers: CORS },
       )
     }
 
-    if (!deployRes.ok || !podRes.ok) {
-      console.error(`k3s API error: deploy=${deployRes.status} pods=${podRes.status}`)
+    const safeName = sanitizeName(rawName)
+    const suffix = Math.random().toString(36).slice(2, 6)
+    const deploymentName = `creature-${safeName}-${suffix}`
+    const now = Math.floor(Date.now() / 1000)
+
+    const deployment = {
+      apiVersion: 'apps/v1',
+      kind: 'Deployment',
+      metadata: {
+        name: deploymentName,
+        namespace: CREATURES_NS,
+        labels: {
+          app: 'creature',
+          'creature-name': safeName,
+          'created-at': String(now),
+        },
+      },
+      spec: {
+        replicas,
+        strategy: {
+          type: strategy,
+          ...(strategy === 'RollingUpdate'
+            ? { rollingUpdate: { maxUnavailable: 0, maxSurge: 1 } }
+            : {}),
+        },
+        selector: {
+          matchLabels: { 'creature-deployment': deploymentName },
+        },
+        template: {
+          metadata: {
+            labels: {
+              app: 'creature',
+              'creature-deployment': deploymentName,
+              'creature-name': safeName,
+            },
+          },
+          spec: {
+            containers: [
+              {
+                name: 'creature',
+                image: 'busybox:latest',
+                command: ['sh', '-c', `echo "creature ${rawName} alive" && sleep ${POD_TTL_SECONDS}`],
+                resources: {
+                  requests: { cpu: '5m', memory: '8Mi' },
+                  limits: { cpu: '10m', memory: '16Mi' },
+                },
+              },
+            ],
+          },
+        },
+      },
+    }
+
+    const res = await k8sFetch(
+      env,
+      `/apis/apps/v1/namespaces/${CREATURES_NS}/deployments`,
+      { method: 'POST', body: JSON.stringify(deployment) },
+    )
+
+    if (!res.ok) {
+      const errText = await res.text()
+      console.error(`k8s deploy error: ${res.status} ${errText}`)
       return Response.json(
-        { status: 'error', message: 'Failed to query cluster' },
+        { error: 'Failed to create deployment' },
         { status: 502, headers: CORS },
       )
     }
 
-    const deploy = (await deployRes.json()) as any
-    const pods = (await podRes.json()) as any
-
-    // Extract the last deployment timestamp from conditions
-    const conditions = deploy.status?.conditions || []
-    const lastDeploy = conditions
-      .filter((c: any) => c.type === 'Progressing' || c.type === 'Available')
-      .map((c: any) => c.lastTransitionTime)
-      .sort()
-      .pop() || null
-
-    const podSummary = (pods.items || []).map((p: any) => {
-      const phase = p.status?.phase || 'Unknown'
-      const started = p.status?.startTime || null
-      const ready = (p.status?.conditions || []).some(
-        (c: any) => c.type === 'Ready' && c.status === 'True',
-      )
-
-      return { name: p.metadata?.name, phase, ready, started }
-    })
-
-    const readyCount = podSummary.filter((p: any) => p.ready).length
-    const replicas = deploy.spec?.replicas ?? 0
-
     return Response.json(
-      {
-        status: 'running',
-        replicas,
-        readyPods: readyCount,
-        pods: podSummary,
-        lastDeploy,
-        image: deploy.spec?.template?.spec?.containers?.[0]?.image || null,
-      },
-      { headers: { ...CORS, 'Cache-Control': 'public, max-age=30' } },
+      { deployment: deploymentName, replicas, strategy, ttl: POD_TTL_SECONDS },
+      { headers: CORS },
     )
   } catch (err) {
-    console.error('Infra status error:', err)
+    console.error('Deploy handler error:', err)
+    return Response.json({ error: 'Internal error' }, { status: 500, headers: CORS })
+  }
+}
+
+/** GET /k8s/pods?deployment=<name> — list pods for a creature deployment. */
+async function handleCreaturePods(deployment: string, env: Env): Promise<Response> {
+  try {
+    const res = await k8sFetch(
+      env,
+      `/api/v1/namespaces/${CREATURES_NS}/pods?labelSelector=creature-deployment=${deployment}`,
+    )
+
+    if (!res.ok) {
+      return Response.json(
+        { error: 'Failed to query pods' },
+        { status: 502, headers: CORS },
+      )
+    }
+
+    const data = (await res.json()) as any
+    const pods = (data.items || []).map((p: any) => ({
+      name: p.metadata?.name || 'unknown',
+      phase: p.status?.phase || 'Unknown',
+      ready: (p.status?.conditions || []).some(
+        (c: any) => c.type === 'Ready' && c.status === 'True',
+      ),
+      started: p.status?.startTime || null,
+      restarts: p.status?.containerStatuses?.[0]?.restartCount ?? 0,
+    }))
+
+    // Also get deployment status
+    const depRes = await k8sFetch(
+      env,
+      `/apis/apps/v1/namespaces/${CREATURES_NS}/deployments/${deployment}`,
+    )
+
+    let replicas = 0
+    let readyReplicas = 0
+    let exists = true
+
+    if (depRes.ok) {
+      const dep = (await depRes.json()) as any
+      replicas = dep.spec?.replicas ?? 0
+      readyReplicas = dep.status?.readyReplicas ?? 0
+    } else if (depRes.status === 404) {
+      exists = false
+    }
 
     return Response.json(
-      { status: 'error', message: 'Could not reach cluster' },
-      { status: 502, headers: CORS },
+      { deployment, exists, replicas, readyReplicas, pods },
+      { headers: { ...CORS, 'Cache-Control': 'no-cache' } },
     )
+  } catch (err) {
+    console.error('Pods handler error:', err)
+    return Response.json({ error: 'Internal error' }, { status: 500, headers: CORS })
+  }
+}
+
+/** GET /k8s/pod-metrics?deployment=<name> — real CPU/mem from metrics-server. */
+async function handlePodMetrics(deployment: string, env: Env): Promise<Response> {
+  try {
+    const selector = encodeURIComponent(`creature-deployment=${deployment}`)
+    const res = await k8sFetch(
+      env,
+      `/apis/metrics.k8s.io/v1beta1/namespaces/${CREATURES_NS}/pods?labelSelector=${selector}`,
+    )
+    if (!res.ok) {
+      return Response.json({ metrics: [] }, { headers: { ...CORS, 'Cache-Control': 'no-cache' } })
+    }
+    const data = (await res.json()) as any
+    const metrics = (data.items || []).map((item: any) => ({
+      podName: item.metadata?.name ?? '',
+      cpu: item.containers?.[0]?.usage?.cpu ?? '0m',
+      memory: item.containers?.[0]?.usage?.memory ?? '0Mi',
+    }))
+    return Response.json({ metrics }, { headers: { ...CORS, 'Cache-Control': 'no-cache' } })
+  } catch (err) {
+    console.error('Pod metrics handler error:', err)
+    return Response.json({ metrics: [] }, { status: 500, headers: CORS })
+  }
+}
+
+/** DELETE /k8s/pods/:podName — delete a single pod so the ReplicaSet respawns it. */
+async function handlePodRestart(podName: string, env: Env): Promise<Response> {
+  try {
+    const res = await k8sFetch(
+      env,
+      `/api/v1/namespaces/${CREATURES_NS}/pods/${podName}`,
+      { method: 'DELETE' },
+    )
+    if (!res.ok && res.status !== 404) {
+      return Response.json({ error: 'Failed to delete pod' }, { status: 502, headers: CORS })
+    }
+    return Response.json({ restarted: true }, { headers: CORS })
+  } catch (err) {
+    console.error('Pod restart handler error:', err)
+    return Response.json({ error: 'Internal error' }, { status: 500, headers: CORS })
+  }
+}
+
+/** DELETE /k8s/deploy/:name — tear down a creature deployment. */
+async function handleCreatureTeardown(name: string, env: Env): Promise<Response> {
+  try {
+    const res = await k8sFetch(
+      env,
+      `/apis/apps/v1/namespaces/${CREATURES_NS}/deployments/${name}`,
+      { method: 'DELETE' },
+    )
+
+    if (res.status === 404) {
+      return Response.json({ deleted: true, message: 'Already gone' }, { headers: CORS })
+    }
+
+    if (!res.ok) {
+      return Response.json(
+        { error: 'Failed to delete deployment' },
+        { status: 502, headers: CORS },
+      )
+    }
+
+    return Response.json({ deleted: true }, { headers: CORS })
+  } catch (err) {
+    console.error('Teardown handler error:', err)
+    return Response.json({ error: 'Internal error' }, { status: 500, headers: CORS })
   }
 }

@@ -19,10 +19,10 @@ export default function LandingPage({ onLaunch, onViewCV, hasDeployment }: Props
         <span className="tag">✨ Dev Experience</span>
       </div>
       <p className="landing-bio">
-        I like making infrastructure that just works - and making
-        tools that people actually enjoy using. This little toy lets you
-        spin up voxel creatures inside pretend Kubernetes pods.
-        Give it a go!
+        I build the platforms that ship the product — CI/CD pipelines,
+        Kubernetes clusters, and the developer tooling that makes teams
+        fast. This site runs a pipeline that deploys creature pods to a
+        k3s cluster on Oracle Cloud. Give it a go.
       </p>
       <div className="landing-cta-row">
         <button className="btn-launch" onClick={onLaunch}>

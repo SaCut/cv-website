@@ -4,6 +4,8 @@ export interface CreatureData {
   name: string
   frames: PixelFrame[]
   primaryColour: string
+  /** Real k8s deployment name, set during Phase 4 deploy stage. */
+  deploymentName?: string
 }
 
 export type AppState = 'landing' | 'deploying' | 'deployed'
