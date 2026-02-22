@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import type { DeployConfig, CreatureData } from '../types'
-import { generateSprite, animateSprite } from '../api'
+import { generateSprite, animateSprite, deployCreature } from '../api'
 
 interface Props {
   config: DeployConfig
@@ -96,7 +96,7 @@ export default function Pipeline({ config, onComplete }: Props) {
   const [activeTab, setActiveTab] = useState(0)
   const [pipelineDone, setPipelineDone] = useState(false)
   const creatureRef = useRef<CreatureData | null>(null)
-  const logsEndRef = useRef<HTMLDivElement>(null)
+  const logsBoxRef = useRef<HTMLDivElement>(null)
 
   const addLogToStage = useCallback((stageIdx: number, line: string) => {
     setStageLogs(prev => {
@@ -215,6 +215,36 @@ export default function Pipeline({ config, onComplete }: Props) {
           await addLogLines(i, stageLines.slice(-2), 200, c)
         }
         // ── Other stages: Normal logs ──
+        // ── Deploy stage: Create real k8s deployment ──
+        else if (STAGES[i].id === 'deploy') {
+          // Show initial log lines
+          await addLogLines(i, stageLines.slice(0, 2), 300, c)
+          if (c.current) return
+
+          addLogToStage(i, `> Creating deployment in namespace creatures...`)
+
+          const deployResult = await deployCreature(
+            config.creatureName,
+            config.replicas,
+            config.strategy,
+          )
+          if (c.current) return
+
+          if (deployResult.error) {
+            addLogToStage(i, `> ⚠ k8s deploy failed: ${deployResult.error}`)
+            addLogToStage(i, `> Continuing with simulated pods ✓`)
+          } else {
+            addLogToStage(i, `> deployment.apps/${deployResult.deployment} created`)
+            addLogToStage(i, `> strategy: ${deployResult.strategy}`)
+            addLogToStage(i, `> TTL: ${deployResult.ttl}s`)
+            // Store deployment name on the creature data
+            if (creatureRef.current) {
+              creatureRef.current.deploymentName = deployResult.deployment
+            }
+          }
+
+          await addLogLines(i, stageLines.slice(-1), 300, c)
+        }
         else {
           await addLogLines(i, stageLines, duration / (stageLines.length + 1), c)
         }
@@ -230,9 +260,10 @@ export default function Pipeline({ config, onComplete }: Props) {
     return () => { c.current = true }
   }, [config, addLogLines, addLogToStage])
 
-  // auto-scroll logs when the active tab's logs change
+  // auto-scroll log box when the active tab's logs change
   useEffect(() => {
-    logsEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const el = logsBoxRef.current
+    if (el) el.scrollTop = el.scrollHeight
   }, [stageLogs, activeTab])
 
   const handleViewResources = useCallback(() => {
@@ -260,7 +291,7 @@ export default function Pipeline({ config, onComplete }: Props) {
         ))}
       </div>
 
-      <div className="pipeline-logs">
+      <div className="pipeline-logs" ref={logsBoxRef}>
         {visibleLogs.length === 0 && (
           <div className="log-line info" style={{ opacity: 0.5 }}>
             Waiting for stage to start...
@@ -271,7 +302,6 @@ export default function Pipeline({ config, onComplete }: Props) {
             {line}
           </div>
         ))}
-        <div ref={logsEndRef} />
       </div>
 
       {pipelineDone && (

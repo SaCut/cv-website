@@ -1,49 +1,83 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import type { AppState, CreatureData, DeployConfig } from './types'
+import { teardownCreature } from './api'
 import LandingPage from './components/LandingPage'
 import Pipeline from './components/Pipeline'
 import PodCluster from './components/PodCluster'
 import CVPage from './components/CVPage'
 
+/* ── sessionStorage persistence ─────────────────── */
+
+const STORAGE_KEY = 'cv-deployment'
+
+interface SavedDeployment {
+  creature: CreatureData
+  config: DeployConfig
+}
+
+function loadDeployment(): SavedDeployment | null {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+    return JSON.parse(raw)
+  } catch { return null }
+}
+
+function saveDeployment(creature: CreatureData, config: DeployConfig) {
+  sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ creature, config }))
+}
+
+function clearDeployment() {
+  sessionStorage.removeItem(STORAGE_KEY)
+}
+
+/* ── app ────────────────────────────────────────── */
+
 export default function App() {
-  const [bladeState, setBladeState] = useState<'closed' | 'config' | 'deploying' | 'deployed'>('closed')
+  const saved = loadDeployment()
+  const [phase, setPhase] = useState<'idle' | 'config' | 'deploying' | 'deployed'>(
+    saved ? 'deployed' : 'idle'
+  )
   const [showCV, setShowCV] = useState(false)
-  const [config, setConfig] = useState<DeployConfig>({
-    creatureName: '',
-    replicas: 3,
-    strategy: 'RollingUpdate',
-  })
-  const [creature, setCreature] = useState<CreatureData | null>(null)
+  const [config, setConfig] = useState<DeployConfig>(
+    saved?.config ?? { creatureName: '', replicas: 3, strategy: 'RollingUpdate' }
+  )
+  const [creature, setCreature] = useState<CreatureData | null>(saved?.creature ?? null)
 
   const handleLaunch = useCallback(() => {
-    // If there's already a deployment, reopen it; otherwise start new config
     if (creature !== null) {
-      setBladeState('deployed')
+      setPhase('deployed')
     } else {
-      setBladeState('config')
+      setPhase('config')
     }
   }, [creature])
 
   const handleDeploy = useCallback((cfg: DeployConfig) => {
     setConfig(cfg)
-    setBladeState('deploying')
+    setPhase('deploying')
   }, [])
 
   const handleDeployComplete = useCallback((data: CreatureData) => {
     setCreature(data)
-    setBladeState('deployed')
-  }, [])
+    setPhase('deployed')
+    saveDeployment(data, config)
+  }, [config])
 
   const handleReset = useCallback(() => {
-    setBladeState('closed')
+    setPhase('idle')
     setCreature(null)
+    clearDeployment()
   }, [])
 
-  const handleCloseBlade = useCallback(() => {
-    if (bladeState === 'config' || bladeState === 'deployed') {
-      setBladeState('closed')
+  const handleRelaunch = useCallback(async () => {
+    // Tear down current deployment, then rerun Pipeline with same config
+    if (creature?.deploymentName) {
+      await teardownCreature(creature.deploymentName)
     }
-  }, [bladeState])
+    setCreature(null)
+    clearDeployment()
+    setPhase('deploying')
+  }, [creature])
 
   if (showCV) {
     return (
@@ -53,54 +87,48 @@ export default function App() {
     )
   }
 
+  const expanded = phase !== 'idle'
+
   return (
-    <div className="app split-layout">
-      <div className="main-panel">
+    <div className={`app panorama ${expanded ? 'panorama-expanded' : ''}`}>
+      <section className="pano-landing">
         <LandingPage 
           onLaunch={handleLaunch} 
           onViewCV={() => setShowCV(true)}
           hasDeployment={creature !== null}
         />
-      </div>
+      </section>
 
-      <div className={`blade ${bladeState !== 'closed' ? 'blade-open' : ''}`}>
-        {bladeState !== 'closed' && (
-          <button className="blade-close" onClick={handleCloseBlade} title="Close">
-            ✕
-          </button>
-        )}
+      {expanded && (
+        <section className="pano-deploy">
+          {phase === 'config' && (
+            <ConfigPanel onDeploy={handleDeploy} onClose={() => setPhase('idle')} />
+          )}
 
-        {bladeState === 'config' && <ConfigPanel onDeploy={handleDeploy} />}
+          {phase === 'deploying' && (
+            <Pipeline config={config} onComplete={handleDeployComplete} />
+          )}
 
-        {bladeState === 'deploying' && (
-          <Pipeline config={config} onComplete={handleDeployComplete} />
-        )}
-
-        {bladeState === 'deployed' && creature && (
-          <>
-            <div className="blade-header">
-              <button className="btn-view-cv-blade" onClick={() => setShowCV(true)}>
-                📄 View CV
-              </button>
-            </div>
-            <PodCluster creature={creature} config={config} onReset={handleReset} />
-          </>
-        )}
-      </div>
+          {phase === 'deployed' && creature && (
+            <PodCluster creature={creature} config={config} onReset={handleReset} onRelaunch={handleRelaunch} />
+          )}
+        </section>
+      )}
     </div>
   )
 }
 
 /* ── inline config panel (small, not worth a file) ── */
 
-function ConfigPanel({ onDeploy }: { onDeploy: (c: DeployConfig) => void }) {
+function ConfigPanel({ onDeploy, onClose }: { onDeploy: (c: DeployConfig) => void; onClose: () => void }) {
   const [name, setName] = useState('')
   const [replicas, setReplicas] = useState(3)
   const [strategy, setStrategy] = useState<'RollingUpdate' | 'Recreate'>('RollingUpdate')
 
   return (
     <div className="config-panel">
-      <h2>🛠️ Build your deployment</h2>
+      <button className="config-close" onClick={onClose} title="Close">✕</button>
+      <h2>Build your deployment</h2>
 
       <div className="config-field">
         <label>Creature / Object</label>
@@ -158,8 +186,9 @@ function ConfigPanel({ onDeploy }: { onDeploy: (c: DeployConfig) => void }) {
         disabled={!name.trim()}
         onClick={() => onDeploy({ creatureName: name.trim(), replicas, strategy })}
       >
-🚀 Deploy!
+Deploy
       </button>
     </div>
   )
 }
+

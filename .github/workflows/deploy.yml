@@ -8,10 +8,8 @@ permissions:
   contents: read
   pages: write
   id-token: write
-  packages: write
 
 jobs:
-  # -- Build the Vite app (shared by both deploy targets) --
   build:
     runs-on: ubuntu-latest
     steps:
@@ -25,7 +23,6 @@ jobs:
         with:
           path: ./dist
 
-  # -- GitHub Pages (fallback / redirect) --
   deploy-pages:
     needs: build
     runs-on: ubuntu-latest
@@ -35,67 +32,3 @@ jobs:
     steps:
       - uses: actions/deploy-pages@v4
         id: deployment
-
-  # -- Build container image and push to GHCR --
-  build-image:
-    runs-on: ubuntu-latest
-    outputs:
-      image: ${{ steps.image-ref.outputs.value }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Image metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository }}
-          tags: |
-            type=sha,prefix=
-            type=raw,value=latest
-
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-
-      - name: Export image ref
-        id: image-ref
-        run: |
-          echo "value=$(echo 'ghcr.io/${{ github.repository }}' | tr '[:upper:]' '[:lower:]'):${{ steps.meta.outputs.version }}" >> $GITHUB_OUTPUT
-
-  # -- Roll out to k3s via SSH --
-  deploy-k3s:
-    needs: build-image
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Configure SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/key
-          chmod 600 ~/.ssh/key
-          ssh-keyscan -H 143.47.255.170 >> ~/.ssh/known_hosts
-
-      - name: Apply manifests and roll out
-        run: |
-          IMAGE="${{ needs.build-image.outputs.image }}"
-          SSH="ssh -i ~/.ssh/key ubuntu@143.47.255.170"
-
-          # Pipe each manifest directly — no scp, no temp files
-          for f in k8s/*.yaml; do
-            $SSH "cat | sudo kubectl apply --validate=false -f -" < "$f"
-          done
-
-          # Update image and wait for rollout
-          $SSH "sudo kubectl set image deployment/cv-website cv-website=${IMAGE} && \
-                sudo kubectl rollout status deployment/cv-website --timeout=120s"

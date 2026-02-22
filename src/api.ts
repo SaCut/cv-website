@@ -181,3 +181,122 @@ export async function animateSprite(
     }
   }
 }
+
+/* ═══════════════════════════════════════════════════════
+   K8S CREATURE DEPLOYMENT
+   ═══════════════════════════════════════════════════════ */
+
+export interface DeployResult {
+  deployment: string
+  replicas: number
+  strategy: string
+  ttl: number
+  error?: string
+}
+
+export interface PodStatus {
+  name: string
+  phase: string
+  ready: boolean
+  started: string | null
+  restarts?: number
+}
+
+export interface PodsResult {
+  deployment: string
+  exists: boolean
+  replicas: number
+  readyReplicas: number
+  pods: PodStatus[]
+  error?: string
+}
+
+/** Create a real creature deployment on k3s. */
+export async function deployCreature(
+  name: string,
+  replicas: number,
+  strategy: 'RollingUpdate' | 'Recreate',
+): Promise<DeployResult> {
+  try {
+    const res = await fetch(`${API_URL}/k8s/deploy`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, replicas, strategy }),
+    })
+
+    const data = await res.json() as any
+
+    if (!res.ok) {
+      return {
+        deployment: '',
+        replicas: 0,
+        strategy: '',
+        ttl: 0,
+        error: data.error || `HTTP ${res.status}`,
+      }
+    }
+
+    return data as DeployResult
+  } catch (err) {
+    console.error('Deploy error:', err)
+    return { deployment: '', replicas: 0, strategy: '', ttl: 0, error: 'Network error' }
+  }
+}
+
+/** Poll pod status for a creature deployment. */
+export async function getCreaturePods(deployment: string): Promise<PodsResult> {
+  try {
+    const res = await fetch(`${API_URL}/k8s/pods?deployment=${encodeURIComponent(deployment)}`)
+    const data = await res.json() as any
+
+    if (!res.ok) {
+      return { deployment, exists: false, replicas: 0, readyReplicas: 0, pods: [], error: data.error }
+    }
+
+    return data as PodsResult
+  } catch (err) {
+    console.error('Pod status error:', err)
+    return { deployment, exists: false, replicas: 0, readyReplicas: 0, pods: [], error: 'Network error' }
+  }
+}
+
+/** Tear down a creature deployment. */
+export async function teardownCreature(deployment: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_URL}/k8s/deploy/${encodeURIComponent(deployment)}`, {
+      method: 'DELETE',
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
+export interface PodMetric {
+  podName: string
+  cpu: string
+  memory: string
+}
+
+/** Fetch real CPU/mem metrics for pods in a deployment (metrics-server). */
+export async function getCreatureMetrics(deployment: string): Promise<PodMetric[]> {
+  try {
+    const res = await fetch(`${API_URL}/k8s/pod-metrics?deployment=${encodeURIComponent(deployment)}`)
+    const data = await res.json() as any
+    return (data.metrics || []) as PodMetric[]
+  } catch {
+    return []
+  }
+}
+
+/** Delete a single pod so the ReplicaSet respawns it (restart). */
+export async function restartPod(podName: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_URL}/k8s/pods/${encodeURIComponent(podName)}`, {
+      method: 'DELETE',
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
