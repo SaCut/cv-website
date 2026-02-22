@@ -14,7 +14,7 @@ export default function CVPage({ onBack }: Props) {
       <header className="cv-header">
         <div className="cv-header-text">
           <h1>Saverio Cutrupi</h1>
-          <p className="cv-headline">Platform Engineer · Full-Stack Developer</p>
+          <p className="cv-headline">Software Engineer · Platform &amp; Full-Stack</p>
           <div className="cv-contact">
             <span>Hertford, UK</span>
             <a href="mailto:saveriocutrupi@hotmail.com">saveriocutrupi@hotmail.com</a>

@@ -7,7 +7,6 @@ export default function StickyHeader({ onViewCV }: Props) {
     <header className="sticky-header">
       <div className="header-left">
         <span className="header-name">Saverio Cutrupi</span>
-        <span className="header-role">Platform Engineer</span>
       </div>
       <div className="header-right">
         <button className="header-btn cv" onClick={onViewCV}>📄 CV</button>

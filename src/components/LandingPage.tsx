@@ -11,7 +11,6 @@ export default function LandingPage({ onLaunch, onViewCV, hasDeployment }: Props
       <h1 className="landing-name">
         Hi, I'm <span className="highlight">Saverio</span>
       </h1>
-      <p className="landing-title">Platform Engineer</p>
       <div className="landing-subtitle">
         <span className="tag">☁️ Cloud Infra</span>
         <span className="tag">🔧 CI/CD</span>
