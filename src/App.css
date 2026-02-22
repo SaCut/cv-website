@@ -450,6 +450,7 @@ a:hover { text-decoration: underline; }
   max-width: none;
   padding: 3.5rem 1rem 1rem;
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1302,6 +1303,9 @@ a:hover { text-decoration: underline; }
   .blade {
     width: 100%;
     left: 0;
+    height: 100vh;
+    height: 100dvh;
+    overflow-y: auto;
   }
   
   .blade-open {
@@ -1312,6 +1316,25 @@ a:hover { text-decoration: underline; }
     width: 2.75rem;
     height: 2.75rem;
     font-size: 1.2rem;
+  }
+  
+  .blade .pipeline-view {
+    overflow-y: auto;
+    flex: 1 1 auto;
+  }
+
+  .blade .pipeline-stages {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 0;
+    padding-bottom: 0.5rem;
+  }
+
+  .blade .pipeline-stages .stage-connector {
+    display: block;
+    width: 24px;
+    min-width: 24px;
   }
   
   .split-layout .main-panel {
