@@ -1,0 +1,48 @@
+{
+  "name": "cv-website dev",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+
+  // Runs on the HOST before the container starts.
+  // Detects OS internally and handles Linux, macOS, and Windows (WSL/Git Bash).
+  "initializeCommand": "sh .devcontainer/check-docker.sh",
+
+  "features": {
+    // Node.js — matches the app's runtime
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts"
+    },
+    // Terraform — for IaC work without polluting the host
+    "ghcr.io/devcontainers/features/terraform:1": {
+      "version": "latest"
+    },
+    // kubectl — for direct cluster access
+    "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
+      "version": "latest",
+      "helm": "none",
+      "minikube": "none"
+    }
+  },
+
+  // Install npm dependencies on container creation
+  "postCreateCommand": "npm install",
+
+  // Forward Vite dev server port
+  "forwardPorts": [5173],
+  "portsAttributes": {
+    "5173": {
+      "label": "Vite dev server",
+      "onAutoForward": "notify"
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "hashicorp.terraform",
+        "ms-kubernetes-tools.vscode-kubernetes-tools",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode"
+      ]
+    }
+  }
+}

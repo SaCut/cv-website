@@ -1,4 +1,5 @@
 import CVSprite from './CVSprite'
+import LiveInfraPanel from './LiveInfraPanel'
 
 interface Props {
   onBack: () => void
@@ -25,7 +26,9 @@ export default function CVPage({ onBack }: Props) {
         </div>
       </header>
 
-      {/* ── about ──────────────────────────────────── */}
+      <LiveInfraPanel />
+
+      {/* -- about ---------------------------------------- */}
       <section className="cv-section">
         <div className="cv-illustrated-section">
           <div className="cv-illustrated-text">
