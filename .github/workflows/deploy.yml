@@ -83,7 +83,7 @@ jobs:
 
       - name: Apply manifests and roll out
         run: |
-          IMAGE="ghcr.io/${{ github.repository }}:${{ github.sha }}"
+          IMAGE=$(echo "ghcr.io/${{ github.repository }}:${{ github.sha }}" | tr '[:upper:]' '[:lower:]')
           SSH="ssh -i ~/.ssh/key ubuntu@143.47.255.170"
 
           # Pipe each manifest directly — no scp, no temp files
