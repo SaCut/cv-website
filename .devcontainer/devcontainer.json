@@ -2,13 +2,9 @@
   "name": "cv-website dev",
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
 
-  // Runs on the HOST before the container starts — per OS.
-  // Fails fast with a clear message if Docker isn't installed or not running.
-  "initializeCommand": {
-    "linux": "sh .devcontainer/check-docker.sh",
-    "osx": "sh .devcontainer/check-docker.sh",
-    "windows": "powershell -ExecutionPolicy Bypass -File .devcontainer/check-docker.ps1"
-  },
+  // Runs on the HOST before the container starts.
+  // Detects OS internally and handles Linux, macOS, and Windows (WSL/Git Bash).
+  "initializeCommand": "sh .devcontainer/check-docker.sh",
 
   "features": {
     // Node.js — matches the app's runtime

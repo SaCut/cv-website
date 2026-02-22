@@ -1,0 +1,11 @@
+**/*.md
+node_modules
+.git
+.github
+.devcontainer
+.vscode
+terraform
+worker
+cv_refs
+**/_*
+dist
