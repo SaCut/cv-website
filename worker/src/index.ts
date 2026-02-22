@@ -13,11 +13,13 @@
 
 interface Env {
   GITHUB_TOKEN: string
+  K3S_API_URL: string
+  K3S_TOKEN: string
 }
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 }
 
@@ -605,6 +607,97 @@ export default {
       }
     }
 
+    // -- Endpoint 3: Live infra status (read-only k3s proxy) --
+    if (request.method === 'GET' && url.pathname === '/infra-status') {
+      return fetchInfraStatus(env)
+    }
+
     return new Response('Not found', { status: 404, headers: CORS })
   },
+}
+
+/* ═══════════════════════════════════════════════════════
+   K3S INFRA STATUS
+   ═══════════════════════════════════════════════════════ */
+
+/** Fetch read-only cluster status from k3s and return a minimal summary. */
+async function fetchInfraStatus(env: Env): Promise<Response> {
+  const headers = {
+    Authorization: `Bearer ${env.K3S_TOKEN}`,
+  }
+
+  try {
+    const [deployRes, podRes] = await Promise.all([
+      fetch(`${env.K3S_API_URL}/apis/apps/v1/namespaces/default/deployments/cv-website`, {
+        headers,
+        // k3s uses a self-signed cert
+        // @ts-expect-error -- Cloudflare-specific fetch option
+        cf: { cacheTtl: 0 },
+      }),
+      fetch(`${env.K3S_API_URL}/api/v1/namespaces/default/pods?labelSelector=app=cv-website`, {
+        headers,
+        // @ts-expect-error -- Cloudflare-specific fetch option
+        cf: { cacheTtl: 0 },
+      }),
+    ])
+
+    // If the deployment doesn't exist yet, return a "not deployed" status
+    if (deployRes.status === 404) {
+      return Response.json(
+        { status: 'not-deployed', pods: [], message: 'Deployment not found' },
+        { headers: { ...CORS, 'Cache-Control': 'public, max-age=30' } },
+      )
+    }
+
+    if (!deployRes.ok || !podRes.ok) {
+      console.error(`k3s API error: deploy=${deployRes.status} pods=${podRes.status}`)
+      return Response.json(
+        { status: 'error', message: 'Failed to query cluster' },
+        { status: 502, headers: CORS },
+      )
+    }
+
+    const deploy = (await deployRes.json()) as any
+    const pods = (await podRes.json()) as any
+
+    // Extract the last deployment timestamp from conditions
+    const conditions = deploy.status?.conditions || []
+    const lastDeploy = conditions
+      .filter((c: any) => c.type === 'Progressing' || c.type === 'Available')
+      .map((c: any) => c.lastTransitionTime)
+      .sort()
+      .pop() || null
+
+    const podSummary = (pods.items || []).map((p: any) => {
+      const phase = p.status?.phase || 'Unknown'
+      const started = p.status?.startTime || null
+      const ready = (p.status?.conditions || []).some(
+        (c: any) => c.type === 'Ready' && c.status === 'True',
+      )
+
+      return { name: p.metadata?.name, phase, ready, started }
+    })
+
+    const readyCount = podSummary.filter((p: any) => p.ready).length
+    const replicas = deploy.spec?.replicas ?? 0
+
+    return Response.json(
+      {
+        status: 'running',
+        replicas,
+        readyPods: readyCount,
+        pods: podSummary,
+        lastDeploy,
+        image: deploy.spec?.template?.spec?.containers?.[0]?.image || null,
+      },
+      { headers: { ...CORS, 'Cache-Control': 'public, max-age=30' } },
+    )
+  } catch (err) {
+    console.error('Infra status error:', err)
+
+    return Response.json(
+      { status: 'error', message: 'Could not reach cluster' },
+      { status: 502, headers: CORS },
+    )
+  }
 }
