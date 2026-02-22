@@ -54,7 +54,7 @@ variable "instance_memory_gb" {
 variable "instance_display_name" {
   description = "Display name for the VM instance."
   type        = string
-  default     = "cv-website-k3s"
+  default     = "sacut-cv-web-vm1"
 }
 
 # ── Network ─────────────────────────────────────────────
