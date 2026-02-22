@@ -77,13 +77,29 @@ jobs:
       - name: Write kubeconfig
         run: |
           mkdir -p ~/.kube
-          echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
+          # Build a minimal kubeconfig using the deployer service account token.
+          # Client-cert auth does not work through the Cloudflare Tunnel (TLS is
+          # terminated at the edge), so we use a bearer token instead.
+          cat > ~/.kube/config <<EOF
+          apiVersion: v1
+          kind: Config
+          clusters:
+          - cluster:
+              server: https://k3s.saveriocutrupi.com
+              insecure-skip-tls-verify: true
+            name: k3s
+          contexts:
+          - context:
+              cluster: k3s
+              user: deployer
+            name: k3s
+          current-context: k3s
+          users:
+          - name: deployer
+            user:
+              token: ${{ secrets.K3S_DEPLOY_TOKEN }}
+          EOF
           chmod 600 ~/.kube/config
-          # Rewrite server URL to the Cloudflare Tunnel endpoint and skip TLS verify
-          # (tunnel presents Cloudflare's cert, not k3s's self-signed CA)
-          kubectl config set-cluster default \
-            --server=https://k3s.saveriocutrupi.com \
-            --insecure-skip-tls-verify=true
 
       - name: Apply manifests and roll out
         run: |
