@@ -74,32 +74,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Configure SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/key
-          chmod 600 ~/.ssh/key
-          ssh-keyscan -H 143.47.255.170 >> ~/.ssh/known_hosts
-
       - name: Write kubeconfig
         run: |
           mkdir -p ~/.kube
           echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
           chmod 600 ~/.kube/config
+          # Rewrite server URL to the Cloudflare Tunnel endpoint and skip TLS verify
+          # (tunnel presents Cloudflare's cert, not k3s's self-signed CA)
+          kubectl config set-cluster default \
+            --server=https://k3s.saveriocutrupi.com \
+            --insecure-skip-tls-verify=true
 
       - name: Apply manifests and roll out
-        env:
-          SSH_KEY: ~/.ssh/key
-          VM_HOST: ubuntu@143.47.255.170
         run: |
-          # Copy manifests to the VM
-          ssh -i $SSH_KEY $VM_HOST "mkdir -p /tmp/k8s"
-          scp -i $SSH_KEY -r k8s/ $VM_HOST:/tmp/k8s/
-
-          # Apply manifests and trigger a rollout with the new image tag
           IMAGE="ghcr.io/${{ github.repository }}:${{ github.sha }}"
-          ssh -i $SSH_KEY $VM_HOST "\
-            sudo kubectl apply -f /tmp/k8s/ && \
-            sudo kubectl set image deployment/cv-website cv-website=${IMAGE} && \
-            sudo kubectl rollout status deployment/cv-website --timeout=120s"
 
+          # Apply manifests directly from the runner (kubeconfig already written above)
+          kubectl apply -f k8s/
+
+          # Update the image and wait for rollout
+          kubectl set image deployment/cv-website cv-website=${IMAGE}
+          kubectl rollout status deployment/cv-website --timeout=120s
