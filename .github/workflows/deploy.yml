@@ -74,25 +74,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Write kubeconfig
+      - name: Configure SSH
         run: |
-          kubectl config set-cluster k3s \
-            --server=https://k3s.saveriocutrupi.com \
-            --insecure-skip-tls-verify=true
-          kubectl config set-credentials deployer \
-            --token="${{ secrets.K3S_DEPLOY_TOKEN }}"
-          kubectl config set-context k3s \
-            --cluster=k3s \
-            --user=deployer
-          kubectl config use-context k3s
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/key
+          chmod 600 ~/.ssh/key
+          ssh-keyscan -H 143.47.255.170 >> ~/.ssh/known_hosts
 
       - name: Apply manifests and roll out
         run: |
           IMAGE="ghcr.io/${{ github.repository }}:${{ github.sha }}"
+          SSH="ssh -i ~/.ssh/key ubuntu@143.47.255.170"
 
-          # Apply manifests directly from the runner (kubeconfig already written above)
-          kubectl apply --validate=false -f k8s/
+          # Pipe each manifest directly — no scp, no temp files
+          for f in k8s/*.yaml; do
+            $SSH "cat | sudo kubectl apply --validate=false -f -" < "$f"
+          done
 
-          # Update the image and wait for rollout
-          kubectl set image deployment/cv-website cv-website=${IMAGE}
-          kubectl rollout status deployment/cv-website --timeout=120s
+          # Update image and wait for rollout
+          $SSH "sudo kubectl set image deployment/cv-website cv-website=${IMAGE} && \
+                sudo kubectl rollout status deployment/cv-website --timeout=120s"
