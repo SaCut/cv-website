@@ -34,6 +34,12 @@ Default: edit over add. Only add when genuinely required.
 
 Avoid: summaries, appendices, TOCs, expanding sentences, "helpful" bloat.
 
+## Communication Style
+
+- No emojis in any output, code, comments, scripts, or documentation
+- ANSI colour codes in shell scripts and terminal output are fine
+- Keep responses concise and direct
+
 ## Code Style
 
 **Naming:** Short but expressive. Avoid cryptic abbreviations.

@@ -1,53 +1,44 @@
 # Terraform — Oracle Cloud Infrastructure
 
-Infrastructure-as-code for the k3s node that hosts the live CV website.
+IaC for the k3s node backing the live site. Provisions the full network stack, compute instance, and a reserved public IP on Oracle Cloud's Always Free tier.
 
-## What it provisions
+## Resources
 
 | Resource            | Detail                                     |
 | ------------------- | ------------------------------------------ |
 | VCN + public subnet | 10.0.0.0/16, internet gateway, route table |
-| Security list       | Ports 22, 80, 443, 6443 open inbound       |
+| Security list       | Inbound: 22, 80, 443, 6443                 |
 | Compute instance    | VM.Standard.E5.Flex — 1 OCPU, 12 GB RAM    |
-| Reserved public IP  | Static IP attached to the instance         |
+| Reserved public IP  | Static — survives instance stop/start      |
 | OS                  | Ubuntu 24.04                               |
-| SSH key             | Injected at creation                       |
 
-Everything runs on Oracle Cloud's Always Free tier — **£0/month**.
+Running cost: **£0/month** (Oracle Always Free tier).
 
 ## Prerequisites
 
-1. [Terraform CLI](https://developer.hashicorp.com/terraform/install) ≥ 1.5
-2. An OCI account with an [API signing key](https://docs.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm) configured
-3. Your tenancy, user, and compartment OCIDs (found in the OCI Console under Identity)
+- [Terraform](https://developer.hashicorp.com/terraform/install) >= 1.5
+- OCI account with an [API signing key](https://docs.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm)
+- Tenancy, user, and compartment OCIDs (OCI Console > Identity)
+
+A dev container is provided at `/.devcontainer` with Terraform pre-installed if you prefer not to install it on your host.
 
 ## Usage
 
 ```bash
 cd terraform
-
-# 1. Create your variable file from the example
 cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars with your OCIDs and key path
+# Fill in terraform.tfvars with your OCIDs and key path
 
-# 2. Initialise and apply
 terraform init
-terraform plan     # review what will be created
-terraform apply    # provision the infrastructure
-
-# 3. Connect
-ssh -i ~/.ssh/sacut-cv-web-ssh ubuntu@<public_ip>
+terraform plan
+terraform apply
 ```
 
-## After provisioning
+The `terraform.tfvars` file is gitignored. Never commit it.
 
-Once the VM is running, install k3s:
+## CI
 
-```bash
-curl -sfL https://get.k3s.io | sh -
-```
-
-The kubeconfig lives at `/etc/rancher/k3s/k3s.yaml` — copy it (with the public IP swapped in) to a GitHub Actions secret for CI/CD deployment.
+The `terraform.yml` workflow runs `fmt --check` and `validate` on every push or PR that touches `terraform/`. No credentials or state backend required — validation only.
 
 ## Teardown
 

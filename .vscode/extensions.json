@@ -1,0 +1,13 @@
+{
+  "recommendations": [
+    // Dev container support — VS Code will prompt to install if missing
+    "ms-vscode-remote.remote-containers",
+    // Terraform
+    "hashicorp.terraform",
+    // Kubernetes
+    "ms-kubernetes-tools.vscode-kubernetes-tools",
+    // Frontend
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode"
+  ]
+}
