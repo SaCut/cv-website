@@ -1303,6 +1303,7 @@ a:hover { text-decoration: underline; }
   .blade {
     width: 100%;
     left: 0;
+    height: 100vh;
     height: 100dvh;
     overflow-y: auto;
   }
