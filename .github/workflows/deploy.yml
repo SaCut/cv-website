@@ -93,6 +93,7 @@ jobs:
           VM_HOST: ubuntu@143.47.255.170
         run: |
           # Copy manifests to the VM
+          ssh -i $SSH_KEY $VM_HOST "mkdir -p /tmp/k8s"
           scp -i $SSH_KEY -r k8s/ $VM_HOST:/tmp/k8s/
 
           # Apply manifests and trigger a rollout with the new image tag
