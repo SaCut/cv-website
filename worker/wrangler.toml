@@ -6,6 +6,9 @@ account_id = "fef56216bdc9170ef025d7a2b4cab612"
 [triggers]
 crons = ["*/10 * * * *"]
 
+[ai]
+binding = "AI"
+
 [vars]
 # Set your GitHub PAT as a secret instead:
 #   wrangler secret put GITHUB_TOKEN

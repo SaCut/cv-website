@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, user-scalable=yes" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <title>Saverio Cutrupi</title>
+    <script>
+      // Recover path after GitHub Pages 404 redirect
+      var _r = sessionStorage.getItem('_spa_redirect')
+      if (_r) { sessionStorage.removeItem('_spa_redirect'); history.replaceState(null, '', _r) }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />

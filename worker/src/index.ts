@@ -15,18 +15,20 @@ interface Env {
   GITHUB_TOKEN: string
   K3S_API_URL: string
   K3S_TOKEN: string
+  /** Cloudflare Workers AI binding (optional — gracefully absent in local dev). */
+  AI: any
 }
 
 const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
 }
 
-const MODEL_QUEUE = ['openai/gpt-4o-mini']
+const MODEL_QUEUE = ["openai/gpt-4o-mini"]
 /** Use the best available model for sprite structure. Falls back through the queue. */
-const SPRITE_MODEL = 'openai/gpt-4o'
-const API_BASE = 'https://models.github.ai/inference'
+const SPRITE_MODEL = "openai/gpt-4o"
+const API_BASE = "https://models.github.ai/inference"
 const MODEL_TIMEOUT_MS = 28_000
 
 /* ═══════════════════════════════════════════════════════
@@ -157,6 +159,35 @@ Output ONLY this JSON:
 Only include shapes that should move (3-8 typically).
 Match each moving part from the motion plan to the shape with the matching role name.`
 
+/** Grid animation: creature name → rectangular pixel regions + offsets (single LLM call). */
+const GRID_ANIMATE_PROMPT = `You are a pixel art animator. Given a creature or object name, imagine it as a 32×32 sprite (side view, facing right, roughly centered). Identify 2-5 rectangular regions that should move in a subtle idle animation loop.
+
+Typical 32×32 sprite layouts:
+- Body: central block, roughly x:8-24, y:8-24
+- Head: top of body, ~6-10px wide
+- Tail: extends left from body, ~4-8px long
+- Wings: above/beside body on the right, ~6-10px
+- Legs: below body — usually stay STILL
+- Fins/tentacles: around body edges
+
+Movement types (pick what fits the creature):
+- sway: gentle horizontal [[1,0],[-1,0],[0,0]] (tails, fins, tentacles)
+- bob: vertical lift [[0,-1],[0,0],[0,-1]] (head, antennae, floating parts)
+- flap: upward pump [[0,-2],[0,-1],[0,0]] (wings, large fins)
+- wag: diagonal wiggle [[-1,1],[1,-1],[0,0]] (small appendages, ear tufts)
+
+Rules:
+- 2-5 moving regions only
+- Offsets: 1-2 pixels maximum
+- Body core and legs stay STILL
+- If subject is fully static (rock, building, sword): {"regions":[]}
+
+Output ONLY this JSON:
+{"regions":[
+  {"x":N,"y":N,"w":N,"h":N,"offsets":[[dx1,dy1],[dx2,dy2],[dx3,dy3]]},
+  ...
+]}`
+
 /* ═══════════════════════════════════════════════════════
    LLM CALLER
    ═══════════════════════════════════════════════════════ */
@@ -178,7 +209,7 @@ async function callLLM(
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     if (attempt > 0) {
       console.log(`Retrying after backoff (attempt ${attempt + 1})...`)
-      await new Promise(r => setTimeout(r, 3000))
+      await new Promise((r) => setTimeout(r, 3000))
     }
 
     for (let i = 0; i < models.length; i++) {
@@ -188,18 +219,18 @@ async function callLLM(
 
       try {
         const res = await fetch(`${API_BASE}/chat/completions`, {
-          method: 'POST',
+          method: "POST",
           signal: controller.signal,
           headers: {
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            Accept: 'application/vnd.github+json',
-            'X-GitHub-Api-Version': '2022-11-28',
+            "Content-Type": "application/json",
+            Accept: "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
           },
           body: JSON.stringify({
             messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: userMessage },
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userMessage },
             ],
             model,
             temperature: 0.4,
@@ -210,26 +241,32 @@ async function callLLM(
         clearTimeout(timer)
 
         if (res.status === 429) {
-          const body = await res.text().catch(() => '')
-          console.warn(`Model ${model} rate limited (429), trying next model. ${body.slice(0, 120)}`)
-          continue   // fall through to the next model in the list
+          const body = await res.text().catch(() => "")
+          console.warn(
+            `Model ${model} rate limited (429), trying next model. ${body.slice(0, 120)}`,
+          )
+          continue // fall through to the next model in the list
         }
 
         if (!res.ok) {
-          const body = await res.text().catch(() => '')
-          console.warn(`Model ${model} returned ${res.status}: ${body.slice(0, 300)}`)
+          const body = await res.text().catch(() => "")
+          console.warn(
+            `Model ${model} returned ${res.status}: ${body.slice(0, 300)}`,
+          )
           continue
         }
 
         const data = (await res.json()) as {
           choices: Array<{ message: { content: string } }>
         }
-        const raw = data.choices[0]?.message?.content || ''
+        const raw = data.choices[0]?.message?.content || ""
         console.log(`Model ${model}: got ${raw.length} chars of content`)
 
         const jsonMatch = raw.match(/\{[\s\S]*\}/)
         if (!jsonMatch) {
-          console.warn(`Model ${model}: no JSON in response. Raw start: ${raw.slice(0, 200)}`)
+          console.warn(
+            `Model ${model}: no JSON in response. Raw start: ${raw.slice(0, 200)}`,
+          )
           continue
         }
 
@@ -287,7 +324,7 @@ function rasterizeShapes(
     if (!color) continue
 
     switch (shape.type) {
-      case 'rect': {
+      case "rect": {
         const { x, y, w, h } = shape
         if (x == null || y == null || w == null || h == null) break
         for (let dy = 0; dy < h; dy++) {
@@ -298,7 +335,7 @@ function rasterizeShapes(
         break
       }
 
-      case 'ellipse': {
+      case "ellipse": {
         const { cx, cy, rx, ry } = shape
         if (cx == null || cy == null || rx == null || ry == null) break
         const safeRx = Math.max(rx, 0.5)
@@ -315,7 +352,7 @@ function rasterizeShapes(
         break
       }
 
-      case 'line': {
+      case "line": {
         let { x1, y1, x2, y2 } = shape
         if (x1 == null || y1 == null || x2 == null || y2 == null) break
         const adx = Math.abs(x2 - x1)
@@ -328,13 +365,19 @@ function rasterizeShapes(
           setPixel(grid, x1, y1, color, size)
           if (x1 === x2 && y1 === y2) break
           const e2 = 2 * err
-          if (e2 > -ady) { err -= ady; x1 += sx }
-          if (e2 < adx) { err += adx; y1 += sy }
+          if (e2 > -ady) {
+            err -= ady
+            x1 += sx
+          }
+          if (e2 < adx) {
+            err += adx
+            y1 += sy
+          }
         }
         break
       }
 
-      case 'triangle': {
+      case "triangle": {
         const pts = shape.points
         if (!Array.isArray(pts) || pts.length !== 3) break
         const [p0, p1, p2] = pts
@@ -344,10 +387,18 @@ function rasterizeShapes(
           const minX = Math.floor(Math.min(p0[0], p1[0], p2[0]))
           const maxX = Math.ceil(Math.max(p0[0], p1[0], p2[0]))
           for (let px = minX; px <= maxX; px++) {
-            const d = (p1[1] - p2[1]) * (p0[0] - p2[0]) + (p2[0] - p1[0]) * (p0[1] - p2[1])
+            const d =
+              (p1[1] - p2[1]) * (p0[0] - p2[0]) +
+              (p2[0] - p1[0]) * (p0[1] - p2[1])
             if (Math.abs(d) < 0.001) continue
-            const a = ((p1[1] - p2[1]) * (px - p2[0]) + (p2[0] - p1[0]) * (py - p2[1])) / d
-            const b = ((p2[1] - p0[1]) * (px - p2[0]) + (p0[0] - p2[0]) * (py - p2[1])) / d
+            const a =
+              ((p1[1] - p2[1]) * (px - p2[0]) +
+                (p2[0] - p1[0]) * (py - p2[1])) /
+              d
+            const b =
+              ((p2[1] - p0[1]) * (px - p2[0]) +
+                (p0[0] - p2[0]) * (py - p2[1])) /
+              d
             const cc = 1 - a - b
             if (a >= -0.01 && b >= -0.01 && cc >= -0.01) {
               setPixel(grid, px, py, color, size)
@@ -357,7 +408,7 @@ function rasterizeShapes(
         break
       }
 
-      case 'pixels': {
+      case "pixels": {
         if (Array.isArray(shape.coords)) {
           for (const coord of shape.coords) {
             if (Array.isArray(coord) && coord.length >= 2) {
@@ -379,41 +430,49 @@ function rasterizeShapes(
 
 /** Human-readable shape summary for Q5 input. */
 function summarizeShapes(shapes: any[]): string {
-  return shapes.map((s: any, i: number) => {
-    switch (s.type) {
-      case 'rect':     return `[${i}] rect (${s.x},${s.y}) ${s.w}×${s.h} role=${s.role}`
-      case 'ellipse':  return `[${i}] ellipse (${s.cx},${s.cy}) r=${s.rx}×${s.ry} role=${s.role}`
-      case 'triangle': return `[${i}] triangle ${JSON.stringify(s.points)} role=${s.role}`
-      case 'line':     return `[${i}] line (${s.x1},${s.y1})→(${s.x2},${s.y2}) role=${s.role}`
-      case 'pixels':   return `[${i}] pixels ×${s.coords?.length || 0} role=${s.role}`
-      default:         return `[${i}] ${s.type} role=${s.role}`
-    }
-  }).join('\n')
+  return shapes
+    .map((s: any, i: number) => {
+      switch (s.type) {
+        case "rect":
+          return `[${i}] rect (${s.x},${s.y}) ${s.w}×${s.h} role=${s.role}`
+        case "ellipse":
+          return `[${i}] ellipse (${s.cx},${s.cy}) r=${s.rx}×${s.ry} role=${s.role}`
+        case "triangle":
+          return `[${i}] triangle ${JSON.stringify(s.points)} role=${s.role}`
+        case "line":
+          return `[${i}] line (${s.x1},${s.y1})→(${s.x2},${s.y2}) role=${s.role}`
+        case "pixels":
+          return `[${i}] pixels ×${s.coords?.length || 0} role=${s.role}`
+        default:
+          return `[${i}] ${s.type} role=${s.role}`
+      }
+    })
+    .join("\n")
 }
 
 /** Shift a single shape by (dx, dy), returning a new object. */
 function shiftShape(shape: any, dx: number, dy: number): any {
   const clone = { ...shape }
   switch (shape.type) {
-    case 'rect':
+    case "rect":
       clone.x = (shape.x ?? 0) + dx
       clone.y = (shape.y ?? 0) + dy
       break
-    case 'ellipse':
+    case "ellipse":
       clone.cx = (shape.cx ?? 0) + dx
       clone.cy = (shape.cy ?? 0) + dy
       break
-    case 'triangle':
+    case "triangle":
       if (Array.isArray(shape.points))
         clone.points = shape.points.map((p: number[]) => [p[0] + dx, p[1] + dy])
       break
-    case 'line':
+    case "line":
       clone.x1 = (shape.x1 ?? 0) + dx
       clone.y1 = (shape.y1 ?? 0) + dy
       clone.x2 = (shape.x2 ?? 0) + dx
       clone.y2 = (shape.y2 ?? 0) + dy
       break
-    case 'pixels':
+    case "pixels":
       if (Array.isArray(shape.coords))
         clone.coords = shape.coords.map((c: number[]) => [c[0] + dx, c[1] + dy])
       break
@@ -431,7 +490,7 @@ function buildAnimFrames(
   const deltaMap = new Map<number, [number, number][]>()
   for (const a of animated) deltaMap.set(a.index, a.offsets)
 
-  return [0, 1, 2].map(frameIdx => {
+  return [0, 1, 2].map((frameIdx) => {
     const shifted = shapes.map((s, si) => {
       const offsets = deltaMap.get(si)
       if (!offsets || !offsets[frameIdx]) return s
@@ -447,39 +506,109 @@ function buildAnimFrames(
    ═══════════════════════════════════════════════════════ */
 
 export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-    if (request.method === 'OPTIONS') {
+  async fetch(
+    request: Request,
+    env: Env,
+    ctx: ExecutionContext,
+  ): Promise<Response> {
+    if (request.method === "OPTIONS") {
       return new Response(null, { headers: CORS })
     }
 
     const url = new URL(request.url)
 
     // ── Endpoint 1: Generate base sprite  (Q1 → Q2 → Q3 → rasterise) ──
-    if (request.method === 'POST' && url.pathname === '/generate-sprite') {
+    if (request.method === "POST" && url.pathname === "/generate-sprite") {
       try {
         const { prompt } = (await request.json()) as { prompt: string }
-        if (!prompt || typeof prompt !== 'string' || prompt.length > 100) {
-          return Response.json({ error: 'Bad prompt' }, { status: 400, headers: CORS })
+        if (!prompt || typeof prompt !== "string" || prompt.length > 100) {
+          return Response.json(
+            { error: "Bad prompt" },
+            { status: 400, headers: CORS },
+          )
+        }
+
+        // ── 1️⃣  Try CF Workers AI image generation first ──
+        if (env.AI) {
+          try {
+            console.log(`CF AI image gen for "${prompt}"...`)
+            const aiResponse = await env.AI.run("@cf/bytedance/stable-diffusion-xl-lightning", {
+              prompt: `pixel art sprite, ${prompt}, single subject, centered on pure white background, white background, isolated, no border, no frame, retro 16-bit game art style, chunky pixels, limited colour palette, clear silhouette, flat lighting, no scenery`,
+              negative_prompt:
+                "realistic, photograph, 3d render, smooth gradients, blurry, nsfw, deformed, text, watermark, frame, border, vignette, dark edges, dark border, gradient background, grey background, shadow, anti-aliasing, scene, landscape, environment, terrain, sky, clouds, ground, platform, tilemap, multiple characters",
+              num_inference_steps: 4,
+              width: 512,
+              height: 512,
+            })
+
+            // aiResponse is a ReadableStream<Uint8Array>
+            const imageBuffer = await new Response(aiResponse).arrayBuffer()
+            const bytes = new Uint8Array(imageBuffer)
+
+            // Chunk binary→base64 to avoid call-stack overflow on large arrays
+            let binary = ""
+            const chunkSize = 8192
+            for (let i = 0; i < bytes.length; i += chunkSize) {
+              binary += String.fromCharCode(
+                ...bytes.subarray(i, Math.min(i + chunkSize, bytes.length)),
+              )
+            }
+            const imageBase64 = `data:image/png;base64,${btoa(binary)}`
+
+            // Quick colour hint via mini model (for card glow effect)
+            const colorHint = await callLLM(
+              `You are a colour expert. Given a subject name, output its most iconic single colour as a hex code. Output ONLY this JSON: {"primaryColour":"#hex"}`,
+              `Subject: ${prompt}`,
+              env.GITHUB_TOKEN,
+              undefined,
+              64,
+            )
+            const primaryColour = colorHint?.parsed?.primaryColour || "#00d4ff"
+
+            console.log(
+              `CF AI image gen succeeded for "${prompt}" (${bytes.length} bytes)`,
+            )
+            return Response.json(
+              { imageBase64, primaryColour, source: "cf-ai" },
+              { headers: { ...CORS, "Content-Type": "application/json" } },
+            )
+          } catch (cfErr: any) {
+            console.warn(
+              `CF AI image gen failed for "${prompt}": ${cfErr?.message || cfErr}. Falling back to LLM pipeline.`,
+            )
+            // Fall through to Q1→Q2→Q3→rasterise pipeline below
+          }
         }
 
         // Q1 (describe, mini) + Q2 (structure, best available) run in PARALLEL
         // If gpt-4o is rate-limited, Q2 falls through to gpt-4o-mini automatically.
         console.log(`Q1+Q2 in parallel for "${prompt}"...`)
         const [descResult, structResult] = await Promise.all([
-          callLLM(DESCRIBE_PROMPT, `Describe: ${prompt}`, env.GITHUB_TOKEN, undefined, 512),
-          callLLM(STRUCTURE_PROMPT, `Subject: ${prompt}`, env.GITHUB_TOKEN, SPRITE_MODEL),
+          callLLM(
+            DESCRIBE_PROMPT,
+            `Describe: ${prompt}`,
+            env.GITHUB_TOKEN,
+            undefined,
+            512,
+          ),
+          callLLM(
+            STRUCTURE_PROMPT,
+            `Subject: ${prompt}`,
+            env.GITHUB_TOKEN,
+            SPRITE_MODEL,
+          ),
         ])
 
         // Build description text for later animation queries
         const description = descResult?.parsed?.parts
-          ? (descResult.parsed.parts as string[]).join('\n')
+          ? (descResult.parsed.parts as string[]).join("\n")
           : prompt
 
         console.log(`Q1 done — ${description.length} chars`)
 
         if (!structResult) {
           return Response.json(
-            { error: 'Failed to generate sprite', fallback: true },
+            { error: "Failed to generate sprite", fallback: true },
             { status: 503, headers: CORS },
           )
         }
@@ -487,34 +616,56 @@ export default {
         const { roles, shapes } = structResult.parsed
         if (!Array.isArray(shapes) || shapes.length < 3) {
           return Response.json(
-            { error: 'Invalid sprite format', fallback: true, shapeCount: shapes?.length, parsed: structResult.parsed },
+            {
+              error: "Invalid sprite format",
+              fallback: true,
+              shapeCount: shapes?.length,
+              parsed: structResult.parsed,
+            },
             { status: 503, headers: CORS },
           )
         }
 
         // Collect unique role names actually used in shapes
-        const usedRoles = [...new Set(shapes.map((s: any) => s.role).filter(Boolean))] as string[]
-        const roleList = usedRoles.length > 0 ? usedRoles : (roles || ['outline', 'body', 'accent'])
+        const usedRoles = [
+          ...new Set(shapes.map((s: any) => s.role).filter(Boolean)),
+        ] as string[]
+        const roleList =
+          usedRoles.length > 0
+            ? usedRoles
+            : roles || ["outline", "body", "accent"]
 
         // Q3: Colour — role list → hex palette (mini)
         console.log(`Q3 colour: ${roleList.length} roles...`)
         const colorResult = await callLLM(
           COLOR_PROMPT,
-          `Subject: ${prompt}\nRoles: ${roleList.join(', ')}`,
+          `Subject: ${prompt}\nRoles: ${roleList.join(", ")}`,
           env.GITHUB_TOKEN,
           undefined,
           512,
         )
 
         let palette: Record<string, string> = {}
-        let primaryColour = '#00d4ff'
+        let primaryColour = "#00d4ff"
         if (colorResult?.parsed?.colors) {
           palette = colorResult.parsed.colors
-          primaryColour = colorResult.parsed.primaryColour || colorResult.parsed.primaryColor || primaryColour
+          primaryColour =
+            colorResult.parsed.primaryColour ||
+            colorResult.parsed.primaryColor ||
+            primaryColour
         } else {
-          console.warn('Q3 colour failed — using fallback palette')
-          const fallbackHues = ['#2a2a2a', '#5a8a5a', '#8aba6a', '#ffffff', '#3a3a3a', '#dddddd']
-          roleList.forEach((r: string, i: number) => { palette[r] = fallbackHues[i % fallbackHues.length] })
+          console.warn("Q3 colour failed — using fallback palette")
+          const fallbackHues = [
+            "#2a2a2a",
+            "#5a8a5a",
+            "#8aba6a",
+            "#ffffff",
+            "#3a3a3a",
+            "#dddddd",
+          ]
+          roleList.forEach((r: string, i: number) => {
+            palette[r] = fallbackHues[i % fallbackHues.length]
+          })
         }
 
         // Map shapes: "role" → "color" key for rasteriser
@@ -522,32 +673,74 @@ export default {
         const frame = rasterizeShapes(palette, coloredShapes)
 
         return Response.json(
-          { frame, palette, shapes: coloredShapes, description, primaryColour, model: structResult.model },
-          { headers: { ...CORS, 'Content-Type': 'application/json' } },
+          {
+            frame,
+            palette,
+            shapes: coloredShapes,
+            description,
+            primaryColour,
+            model: structResult.model,
+          },
+          { headers: { ...CORS, "Content-Type": "application/json" } },
         )
       } catch (err) {
-        console.error('Sprite generation error:', err)
+        console.error("Sprite generation error:", err)
         return Response.json(
-          { error: 'Internal error', fallback: true },
+          { error: "Internal error", fallback: true },
           { status: 500, headers: CORS },
         )
       }
     }
 
     // ── Endpoint 2: Animate sprite  (Q4 → Q5 → rasterise frames) ──
-    if (request.method === 'POST' && url.pathname === '/animate-sprite') {
+    if (request.method === "POST" && url.pathname === "/animate-sprite") {
       try {
-        const { palette, shapes, description, name } = (await request.json()) as {
+        const body = (await request.json()) as {
+          palette?: Record<string, string>
+          shapes?: any[]
+          description?: string
+          name?: string
+          gridMode?: boolean
+        }
+
+        // ── Grid animation path (CF AI rasterised sprites) ──
+        if (body.gridMode) {
+          const subject = body.name || "creature"
+          console.log(`Grid animation for "${subject}"...`)
+          const result = await callLLM(
+            GRID_ANIMATE_PROMPT,
+            `Subject: ${subject}`,
+            env.GITHUB_TOKEN,
+            undefined,
+            512,
+          )
+          if (result?.parsed?.regions && Array.isArray(result.parsed.regions)) {
+            return Response.json(
+              { regions: result.parsed.regions, model: "grid-animated" },
+              { headers: { ...CORS, "Content-Type": "application/json" } },
+            )
+          }
+          return Response.json(
+            { regions: [], model: "grid-static" },
+            { headers: { ...CORS, "Content-Type": "application/json" } },
+          )
+        }
+
+        // ── Shape animation path (existing Q4→Q5 pipeline) ──
+        const { palette, shapes, description, name } = body as {
           palette: Record<string, string>
           shapes: any[]
           description?: string
           name?: string
         }
         if (!palette || !Array.isArray(shapes) || shapes.length < 3) {
-          return Response.json({ error: 'Bad sprite data' }, { status: 400, headers: CORS })
+          return Response.json(
+            { error: "Bad sprite data" },
+            { status: 400, headers: CORS },
+          )
         }
 
-        const subject = name || 'creature'
+        const subject = name || "creature"
         const desc = description || subject
 
         // Q4: Motion — idle animation plan (mini)
@@ -561,14 +754,16 @@ export default {
         )
 
         const motions: string[] = motionResult?.parsed?.motions || []
-        const isStatic = motions.length === 0 || motions.some((m: string) => m.toLowerCase().includes('static'))
+        const isStatic =
+          motions.length === 0 ||
+          motions.some((m: string) => m.toLowerCase().includes("static"))
 
         if (isStatic) {
-          console.log('Q4: subject is static — no animation')
+          console.log("Q4: subject is static — no animation")
           const base = rasterizeShapes(palette, shapes)
           return Response.json(
-            { frames: [base, base, base], model: 'static' },
-            { headers: { ...CORS, 'Content-Type': 'application/json' } },
+            { frames: [base, base, base], model: "static" },
+            { headers: { ...CORS, "Content-Type": "application/json" } },
           )
         }
 
@@ -577,46 +772,56 @@ export default {
         const shapeSummary = summarizeShapes(shapes)
         const animResult = await callLLM(
           ANIMATE_PROMPT,
-          `Motion plan:\n${motions.join('\n')}\n\nShapes:\n${shapeSummary}`,
+          `Motion plan:\n${motions.join("\n")}\n\nShapes:\n${shapeSummary}`,
           env.GITHUB_TOKEN,
           undefined,
           512,
         )
 
-        if (!animResult?.parsed?.animated || !Array.isArray(animResult.parsed.animated)) {
-          console.warn('Q5 failed — returning static frames')
+        if (
+          !animResult?.parsed?.animated ||
+          !Array.isArray(animResult.parsed.animated)
+        ) {
+          console.warn("Q5 failed — returning static frames")
           const base = rasterizeShapes(palette, shapes)
           return Response.json(
-            { frames: [base, base, base], model: 'static-fallback' },
-            { headers: { ...CORS, 'Content-Type': 'application/json' } },
+            { frames: [base, base, base], model: "static-fallback" },
+            { headers: { ...CORS, "Content-Type": "application/json" } },
           )
         }
 
-        const animFrames = buildAnimFrames(palette, shapes, animResult.parsed.animated)
+        const animFrames = buildAnimFrames(
+          palette,
+          shapes,
+          animResult.parsed.animated,
+        )
 
         return Response.json(
-          { frames: animFrames, model: 'llm-animated' },
-          { headers: { ...CORS, 'Content-Type': 'application/json' } },
+          { frames: animFrames, model: "llm-animated" },
+          { headers: { ...CORS, "Content-Type": "application/json" } },
         )
       } catch (err) {
-        console.error('Animation error:', err)
+        console.error("Animation error:", err)
         return Response.json(
-          { error: 'Internal error', fallback: true },
+          { error: "Internal error", fallback: true },
           { status: 500, headers: CORS },
         )
       }
     }
 
     // -- Endpoint 3: Create creature deployment --
-    if (request.method === 'POST' && url.pathname === '/k8s/deploy') {
+    if (request.method === "POST" && url.pathname === "/k8s/deploy") {
       return handleCreatureDeploy(request, env)
     }
 
     // -- Endpoint 4: Get creature pod status --
-    if (request.method === 'GET' && url.pathname === '/k8s/pods') {
-      const deployment = url.searchParams.get('deployment')
+    if (request.method === "GET" && url.pathname === "/k8s/pods") {
+      const deployment = url.searchParams.get("deployment")
       if (!deployment) {
-        return Response.json({ error: 'Missing deployment parameter' }, { status: 400, headers: CORS })
+        return Response.json(
+          { error: "Missing deployment parameter" },
+          { status: 400, headers: CORS },
+        )
       }
       // Piggyback cleanup as a background task — doesn't add latency
       ctx.waitUntil(cleanupOldDeployments(env))
@@ -624,33 +829,45 @@ export default {
     }
 
     // -- Endpoint 5: Tear down creature deployment --
-    if (request.method === 'DELETE' && url.pathname.startsWith('/k8s/deploy/')) {
-      const name = url.pathname.slice('/k8s/deploy/'.length)
+    if (
+      request.method === "DELETE" &&
+      url.pathname.startsWith("/k8s/deploy/")
+    ) {
+      const name = url.pathname.slice("/k8s/deploy/".length)
       if (!name) {
-        return Response.json({ error: 'Missing deployment name' }, { status: 400, headers: CORS })
+        return Response.json(
+          { error: "Missing deployment name" },
+          { status: 400, headers: CORS },
+        )
       }
       return handleCreatureTeardown(name, env)
     }
 
     // -- Endpoint 6: Get pod CPU/mem metrics --
-    if (request.method === 'GET' && url.pathname === '/k8s/pod-metrics') {
-      const deployment = url.searchParams.get('deployment')
+    if (request.method === "GET" && url.pathname === "/k8s/pod-metrics") {
+      const deployment = url.searchParams.get("deployment")
       if (!deployment) {
-        return Response.json({ error: 'Missing deployment parameter' }, { status: 400, headers: CORS })
+        return Response.json(
+          { error: "Missing deployment parameter" },
+          { status: 400, headers: CORS },
+        )
       }
       return handlePodMetrics(deployment, env)
     }
 
     // -- Endpoint 7: Restart (delete) a single pod --
-    if (request.method === 'DELETE' && url.pathname.startsWith('/k8s/pods/')) {
-      const podName = url.pathname.slice('/k8s/pods/'.length)
+    if (request.method === "DELETE" && url.pathname.startsWith("/k8s/pods/")) {
+      const podName = url.pathname.slice("/k8s/pods/".length)
       if (!podName) {
-        return Response.json({ error: 'Missing pod name' }, { status: 400, headers: CORS })
+        return Response.json(
+          { error: "Missing pod name" },
+          { status: 400, headers: CORS },
+        )
       }
       return handlePodRestart(podName, env)
     }
 
-    return new Response('Not found', { status: 404, headers: CORS })
+    return new Response("Not found", { status: 404, headers: CORS })
   },
 
   async scheduled(_event: ScheduledEvent, env: Env): Promise<void> {
@@ -662,7 +879,7 @@ export default {
    K8S CREATURE DEPLOYMENT
    ═══════════════════════════════════════════════════════ */
 
-const CREATURES_NS = 'creatures'
+const CREATURES_NS = "creatures"
 const MAX_PODS_IN_NAMESPACE = 30
 const MAX_REPLICAS = 6
 const POD_TTL_SECONDS = 600 // 10 minutes
@@ -670,24 +887,27 @@ const POD_TTL_SECONDS = 600 // 10 minutes
 function sanitizeName(name: string): string {
   return name
     .toLowerCase()
-    .replace(/[^a-z0-9-]/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
+    .replace(/[^a-z0-9-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
     .slice(0, 40)
 }
 
 function k8sHeaders(env: Env): Record<string, string> {
   return {
     Authorization: `Bearer ${env.K3S_TOKEN}`,
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   }
 }
 
-async function k8sFetch(env: Env, path: string, init?: RequestInit): Promise<Response> {
+async function k8sFetch(
+  env: Env,
+  path: string,
+  init?: RequestInit,
+): Promise<Response> {
   return fetch(`${env.K3S_API_URL}${path}`, {
     ...init,
     headers: { ...k8sHeaders(env), ...(init?.headers || {}) },
-    // @ts-expect-error -- Cloudflare-specific fetch option
     cf: { cacheTtl: 0 },
   })
 }
@@ -712,25 +932,38 @@ async function cleanupOldDeployments(env: Env): Promise<void> {
   const now = Date.now()
 
   for (const dep of data.items || []) {
-    const created = dep.metadata?.labels?.['created-at']
+    const created = dep.metadata?.labels?.["created-at"]
     if (created && now - Number(created) * 1000 > POD_TTL_SECONDS * 1000) {
-      await k8sFetch(env, `/apis/apps/v1/namespaces/${CREATURES_NS}/deployments/${dep.metadata.name}`, {
-        method: 'DELETE',
-      })
+      await k8sFetch(
+        env,
+        `/apis/apps/v1/namespaces/${CREATURES_NS}/deployments/${dep.metadata.name}`,
+        {
+          method: "DELETE",
+        },
+      )
     }
   }
 }
 
 /** POST /k8s/deploy — create a creature deployment. */
-async function handleCreatureDeploy(request: Request, env: Env): Promise<Response> {
+async function handleCreatureDeploy(
+  request: Request,
+  env: Env,
+): Promise<Response> {
   try {
     const body = (await request.json()) as any
-    const rawName = String(body.name || '').trim()
-    const replicas = Math.min(Math.max(Number(body.replicas) || 1, 1), MAX_REPLICAS)
-    const strategy = body.strategy === 'Recreate' ? 'Recreate' : 'RollingUpdate'
+    const rawName = String(body.name || "").trim()
+    const replicas = Math.min(
+      Math.max(Number(body.replicas) || 1, 1),
+      MAX_REPLICAS,
+    )
+    const strategy = body.strategy === "Recreate" ? "Recreate" : "RollingUpdate"
 
     if (!rawName) {
-      return Response.json({ error: 'Missing creature name' }, { status: 400, headers: CORS })
+      return Response.json(
+        { error: "Missing creature name" },
+        { status: 400, headers: CORS },
+      )
     }
 
     // Lazy cleanup before creating new
@@ -740,7 +973,9 @@ async function handleCreatureDeploy(request: Request, env: Env): Promise<Respons
     const podCount = await countPods(env)
     if (podCount + replicas > MAX_PODS_IN_NAMESPACE) {
       return Response.json(
-        { error: `Cluster is busy — ${podCount} pods running. Try fewer replicas or wait.` },
+        {
+          error: `Cluster is busy — ${podCount} pods running. Try fewer replicas or wait.`,
+        },
         { status: 429, headers: CORS },
       )
     }
@@ -751,45 +986,49 @@ async function handleCreatureDeploy(request: Request, env: Env): Promise<Respons
     const now = Math.floor(Date.now() / 1000)
 
     const deployment = {
-      apiVersion: 'apps/v1',
-      kind: 'Deployment',
+      apiVersion: "apps/v1",
+      kind: "Deployment",
       metadata: {
         name: deploymentName,
         namespace: CREATURES_NS,
         labels: {
-          app: 'creature',
-          'creature-name': safeName,
-          'created-at': String(now),
+          app: "creature",
+          "creature-name": safeName,
+          "created-at": String(now),
         },
       },
       spec: {
         replicas,
         strategy: {
           type: strategy,
-          ...(strategy === 'RollingUpdate'
+          ...(strategy === "RollingUpdate"
             ? { rollingUpdate: { maxUnavailable: 0, maxSurge: 1 } }
             : {}),
         },
         selector: {
-          matchLabels: { 'creature-deployment': deploymentName },
+          matchLabels: { "creature-deployment": deploymentName },
         },
         template: {
           metadata: {
             labels: {
-              app: 'creature',
-              'creature-deployment': deploymentName,
-              'creature-name': safeName,
+              app: "creature",
+              "creature-deployment": deploymentName,
+              "creature-name": safeName,
             },
           },
           spec: {
             containers: [
               {
-                name: 'creature',
-                image: 'busybox:latest',
-                command: ['sh', '-c', `echo "creature ${rawName} alive" && sleep ${POD_TTL_SECONDS}`],
+                name: "creature",
+                image: "busybox:latest",
+                command: [
+                  "sh",
+                  "-c",
+                  `echo "creature ${rawName} alive" && sleep ${POD_TTL_SECONDS}`,
+                ],
                 resources: {
-                  requests: { cpu: '5m', memory: '8Mi' },
-                  limits: { cpu: '10m', memory: '16Mi' },
+                  requests: { cpu: "5m", memory: "8Mi" },
+                  limits: { cpu: "10m", memory: "16Mi" },
                 },
               },
             ],
@@ -801,14 +1040,14 @@ async function handleCreatureDeploy(request: Request, env: Env): Promise<Respons
     const res = await k8sFetch(
       env,
       `/apis/apps/v1/namespaces/${CREATURES_NS}/deployments`,
-      { method: 'POST', body: JSON.stringify(deployment) },
+      { method: "POST", body: JSON.stringify(deployment) },
     )
 
     if (!res.ok) {
       const errText = await res.text()
       console.error(`k8s deploy error: ${res.status} ${errText}`)
       return Response.json(
-        { error: 'Failed to create deployment' },
+        { error: "Failed to create deployment" },
         { status: 502, headers: CORS },
       )
     }
@@ -818,13 +1057,19 @@ async function handleCreatureDeploy(request: Request, env: Env): Promise<Respons
       { headers: CORS },
     )
   } catch (err) {
-    console.error('Deploy handler error:', err)
-    return Response.json({ error: 'Internal error' }, { status: 500, headers: CORS })
+    console.error("Deploy handler error:", err)
+    return Response.json(
+      { error: "Internal error" },
+      { status: 500, headers: CORS },
+    )
   }
 }
 
 /** GET /k8s/pods?deployment=<name> — list pods for a creature deployment. */
-async function handleCreaturePods(deployment: string, env: Env): Promise<Response> {
+async function handleCreaturePods(
+  deployment: string,
+  env: Env,
+): Promise<Response> {
   try {
     const res = await k8sFetch(
       env,
@@ -833,17 +1078,17 @@ async function handleCreaturePods(deployment: string, env: Env): Promise<Respons
 
     if (!res.ok) {
       return Response.json(
-        { error: 'Failed to query pods' },
+        { error: "Failed to query pods" },
         { status: 502, headers: CORS },
       )
     }
 
     const data = (await res.json()) as any
     const pods = (data.items || []).map((p: any) => ({
-      name: p.metadata?.name || 'unknown',
-      phase: p.status?.phase || 'Unknown',
+      name: p.metadata?.name || "unknown",
+      phase: p.status?.phase || "Unknown",
       ready: (p.status?.conditions || []).some(
-        (c: any) => c.type === 'Ready' && c.status === 'True',
+        (c: any) => c.type === "Ready" && c.status === "True",
       ),
       started: p.status?.startTime || null,
       restarts: p.status?.containerStatuses?.[0]?.restartCount ?? 0,
@@ -869,16 +1114,22 @@ async function handleCreaturePods(deployment: string, env: Env): Promise<Respons
 
     return Response.json(
       { deployment, exists, replicas, readyReplicas, pods },
-      { headers: { ...CORS, 'Cache-Control': 'no-cache' } },
+      { headers: { ...CORS, "Cache-Control": "no-cache" } },
     )
   } catch (err) {
-    console.error('Pods handler error:', err)
-    return Response.json({ error: 'Internal error' }, { status: 500, headers: CORS })
+    console.error("Pods handler error:", err)
+    return Response.json(
+      { error: "Internal error" },
+      { status: 500, headers: CORS },
+    )
   }
 }
 
 /** GET /k8s/pod-metrics?deployment=<name> — real CPU/mem from metrics-server. */
-async function handlePodMetrics(deployment: string, env: Env): Promise<Response> {
+async function handlePodMetrics(
+  deployment: string,
+  env: Env,
+): Promise<Response> {
   try {
     const selector = encodeURIComponent(`creature-deployment=${deployment}`)
     const res = await k8sFetch(
@@ -886,17 +1137,23 @@ async function handlePodMetrics(deployment: string, env: Env): Promise<Response>
       `/apis/metrics.k8s.io/v1beta1/namespaces/${CREATURES_NS}/pods?labelSelector=${selector}`,
     )
     if (!res.ok) {
-      return Response.json({ metrics: [] }, { headers: { ...CORS, 'Cache-Control': 'no-cache' } })
+      return Response.json(
+        { metrics: [] },
+        { headers: { ...CORS, "Cache-Control": "no-cache" } },
+      )
     }
     const data = (await res.json()) as any
     const metrics = (data.items || []).map((item: any) => ({
-      podName: item.metadata?.name ?? '',
-      cpu: item.containers?.[0]?.usage?.cpu ?? '0m',
-      memory: item.containers?.[0]?.usage?.memory ?? '0Mi',
+      podName: item.metadata?.name ?? "",
+      cpu: item.containers?.[0]?.usage?.cpu ?? "0m",
+      memory: item.containers?.[0]?.usage?.memory ?? "0Mi",
     }))
-    return Response.json({ metrics }, { headers: { ...CORS, 'Cache-Control': 'no-cache' } })
+    return Response.json(
+      { metrics },
+      { headers: { ...CORS, "Cache-Control": "no-cache" } },
+    )
   } catch (err) {
-    console.error('Pod metrics handler error:', err)
+    console.error("Pod metrics handler error:", err)
     return Response.json({ metrics: [] }, { status: 500, headers: CORS })
   }
 }
@@ -907,41 +1164,56 @@ async function handlePodRestart(podName: string, env: Env): Promise<Response> {
     const res = await k8sFetch(
       env,
       `/api/v1/namespaces/${CREATURES_NS}/pods/${podName}`,
-      { method: 'DELETE' },
+      { method: "DELETE" },
     )
     if (!res.ok && res.status !== 404) {
-      return Response.json({ error: 'Failed to delete pod' }, { status: 502, headers: CORS })
+      return Response.json(
+        { error: "Failed to delete pod" },
+        { status: 502, headers: CORS },
+      )
     }
     return Response.json({ restarted: true }, { headers: CORS })
   } catch (err) {
-    console.error('Pod restart handler error:', err)
-    return Response.json({ error: 'Internal error' }, { status: 500, headers: CORS })
+    console.error("Pod restart handler error:", err)
+    return Response.json(
+      { error: "Internal error" },
+      { status: 500, headers: CORS },
+    )
   }
 }
 
 /** DELETE /k8s/deploy/:name — tear down a creature deployment. */
-async function handleCreatureTeardown(name: string, env: Env): Promise<Response> {
+async function handleCreatureTeardown(
+  name: string,
+  env: Env,
+): Promise<Response> {
   try {
     const res = await k8sFetch(
       env,
       `/apis/apps/v1/namespaces/${CREATURES_NS}/deployments/${name}`,
-      { method: 'DELETE' },
+      { method: "DELETE" },
     )
 
     if (res.status === 404) {
-      return Response.json({ deleted: true, message: 'Already gone' }, { headers: CORS })
+      return Response.json(
+        { deleted: true, message: "Already gone" },
+        { headers: CORS },
+      )
     }
 
     if (!res.ok) {
       return Response.json(
-        { error: 'Failed to delete deployment' },
+        { error: "Failed to delete deployment" },
         { status: 502, headers: CORS },
       )
     }
 
     return Response.json({ deleted: true }, { headers: CORS })
   } catch (err) {
-    console.error('Teardown handler error:', err)
-    return Response.json({ error: 'Internal error' }, { status: 500, headers: CORS })
+    console.error("Teardown handler error:", err)
+    return Response.json(
+      { error: "Internal error" },
+      { status: 500, headers: CORS },
+    )
   }
 }

@@ -124,6 +124,29 @@ function usePodLogs(creatureName: string) {
   return logs
 }
 
+/* ── copyable kubectl command ───────────────────── */
+
+function CopyableCommand({ cmd }: { cmd: string }) {
+  const [copied, setCopied] = useState(false)
+
+  function copy() {
+    navigator.clipboard.writeText(cmd).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1800)
+    })
+  }
+
+  return (
+    <div className="kubectl-row">
+      <span className="kubectl-prompt">$</span>
+      <span className="kubectl-cmd">{cmd}</span>
+      <button className="kubectl-copy" onClick={copy} title="Copy to clipboard">
+        {copied ? "✓" : "copy"}
+      </button>
+    </div>
+  )
+}
+
 /* ── single pod ─────────────────────────────────── */
 
 function TerminalPod({
@@ -455,6 +478,17 @@ export default function PodCluster({ creature, config, onReset, onRelaunch }: Pr
           <div className="detail-row">
             <span className="detail-label">cluster</span>
             <span className="detail-value">k3s v1.34 · Oracle Cloud VM</span>
+          </div>
+
+          {/* ── try it ── */}
+          <div className="kubectl-section">
+            <span className="kubectl-heading">try it yourself</span>
+            <CopyableCommand cmd={`kubectl get pods -n creatures -l creature-deployment=${creature.deploymentName}`} />
+            {realPods[0]?.name && (
+              <CopyableCommand cmd={`kubectl logs ${realPods[0].name} -n creatures`} />
+            )}
+            <CopyableCommand cmd={`kubectl describe deployment ${creature.deploymentName} -n creatures`} />
+            <CopyableCommand cmd={`kubectl top pods -n creatures -l creature-deployment=${creature.deploymentName}`} />
           </div>
         </div>
       )}

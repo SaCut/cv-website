@@ -1,4 +1,4 @@
-import CVSprite from './CVSprite'
+import CVSprite from "./CVSprite"
 
 interface Props {
   onBack: () => void
@@ -8,23 +8,37 @@ interface Props {
 export default function CVPage({ onBack }: Props) {
   return (
     <div className="cv-page">
-      <button className="cv-back-btn" onClick={onBack}>← Back to pods</button>
+      <button className="cv-back-btn" onClick={onBack}>
+        ← Back to pods
+      </button>
 
       {/* ── header ─────────────────────────────────── */}
       <header className="cv-header">
         <div className="cv-header-text">
           <h1>Saverio Cutrupi</h1>
-          <p className="cv-headline">Software Engineer · Platform &amp; Full-Stack</p>
+          <p className="cv-headline">
+            Software Engineer · Platform &amp; Full-Stack
+          </p>
           <div className="cv-contact">
             <span>Hertford, UK</span>
-            <a href="mailto:saveriocutrupi@hotmail.com">saveriocutrupi@hotmail.com</a>
-            <a href="https://linkedin.com/in/saverio-cutrupi" target="_blank" rel="noopener noreferrer">
+            <a href="mailto:saveriocutrupi@hotmail.com">
+              saveriocutrupi@hotmail.com
+            </a>
+            <a
+              href="https://linkedin.com/in/saverio-cutrupi"
+              target="_blank"
+              rel="noopener noreferrer">
               LinkedIn
+            </a>
+            <a
+              href="https://github.com/SaCut"
+              target="_blank"
+              rel="noopener noreferrer">
+              GitHub
             </a>
           </div>
         </div>
       </header>
-
 
       {/* -- about ---------------------------------------- */}
       <section className="cv-section">
@@ -32,22 +46,28 @@ export default function CVPage({ onBack }: Props) {
           <div className="cv-illustrated-text">
             <h2>About</h2>
             <p>
-              I'm a platform and full-stack engineer with five years of production
-              experience at one of the UK's largest e-commerce platforms. My day-to-day
-              sits at the intersection of cloud infrastructure, CI/CD automation, data
-              pipelines, and developer tooling — the kind of work that keeps engineers
-              productive and production stable.
+              I'm a platform and full-stack engineer with five years of
+              production experience at one of the UK's largest e-commerce
+              platforms. My day-to-day sits at the intersection of cloud
+              infrastructure, CI/CD automation, data pipelines, and developer
+              tooling: the kind of work that keeps engineers productive and
+              production stable.
             </p>
             <p>
-              Over the years I've built real-time dashboards used by 90+ engineers,
-              designed alerting systems that can tell a genuine outage from a transient
-              blip, doubled a cloud VM fleet for a major brand launch with zero downtime,
-              and brought 7,000+ security vulnerabilities down to zero. Most recently
-              I've been exploring AI-driven test generation and LLM-based tooling.
+              Over the years I've built real-time dashboards used by 90+
+              engineers, designed alerting systems that can tell a genuine
+              outage from a transient blip, doubled a cloud VM fleet for a major
+              brand launch with zero downtime, and brought 7,000+ security
+              vulnerabilities down to zero. Most recently I've been exploring
+              AI-driven test generation and LLM-based tooling.
             </p>
             <p>
-              I also speak Italian (native), English (fluent), and enough French and
-              Spanish to order coffee confidently.
+              My path in wasn't straight: a linguistics degree in Rome, eight
+              years as a technical translator, then a deliberate pivot into
+              engineering. The analytical rigour was already there; the tooling
+              just needed learning. I also speak Italian natively, English
+              fluently, and enough French and Spanish to order coffee
+              confidently.
             </p>
           </div>
           <CVSprite name="monitor" size={6} className="cv-section-sprite" />
@@ -102,13 +122,15 @@ export default function CVPage({ onBack }: Props) {
 
             <div className="cv-tier">
               <div className="tier-label">
-                <span className="tier-badge exploring">Currently exploring</span>
+                <span className="tier-badge exploring">Actively building</span>
                 <span className="tier-line" />
               </div>
               <div className="tier-pills">
                 <span className="cv-skill-pill exploring">LLM tooling</span>
                 <span className="cv-skill-pill exploring">Agentic systems</span>
-                <span className="cv-skill-pill exploring">AI-driven testing</span>
+                <span className="cv-skill-pill exploring">
+                  AI-driven testing
+                </span>
               </div>
             </div>
           </div>
@@ -125,45 +147,78 @@ export default function CVPage({ onBack }: Props) {
               <div className="cv-role-header">
                 <div>
                   <h3>ASOS.com</h3>
-                  <span className="cv-role-title">Test Automation &amp; Platform Engineer</span>
+                  <span className="cv-role-title">
+                    Test Automation &amp; Platform Engineer
+                  </span>
                 </div>
-                <span className="cv-role-when">Jun 2023 - Present</span>
+                <span className="cv-role-when">Jun 2023 – Present</span>
               </div>
-              <p>
-                Platform and infrastructure engineering for one of the UK's largest
-                online fashion retailers. I handle infrastructure scaling, data systems,
-                developer tooling, and cross-team collaboration across a pre-production
-                environment serving multiple storefronts.
-              </p>
               <ul>
-                <li>Created automated deployment pipelines for Azure VMs — scaled the fleet from 20 to 40 machines for the Topshop/Topman launch with zero downtime.</li>
-                <li>Achieved 100% disaster recovery coverage through IaC templates (Bicep, YAML, PowerShell) and wrote the recovery runbook that brought estimated restore time from weeks to hours.</li>
-                <li>Built a proof-of-concept for AI-driven test generation using LLMs, including feasibility analysis, architecture roadmap, and a working pilot.</li>
-                <li>Led the technical evaluation for migrating from Nightwatch/Selenium to Playwright.</li>
-                <li>Presented tooling and team capabilities at two engineering-wide events.</li>
+                <li>
+                  Created automated deployment pipelines for Azure VMs; scaled
+                  the fleet from 20 to 40 machines for the Topshop/Topman launch
+                  with zero downtime.
+                </li>
+                <li>
+                  Achieved 100% disaster recovery coverage for the team’s
+                  infrastructure through IaC templates (Bicep, YAML, PowerShell)
+                  and wrote the recovery runbook that brought estimated restore
+                  time from weeks to hours.
+                </li>
+                <li>
+                  Built a proof-of-concept for AI-driven test generation using
+                  LLMs, including feasibility analysis, architecture roadmap,
+                  and a working pilot.
+                </li>
+                <li>
+                  Led the technical evaluation for migrating from
+                  Nightwatch/Selenium to Playwright.
+                </li>
+                <li>
+                  Presented tooling and team capabilities at two
+                  engineering-wide events.
+                </li>
               </ul>
             </article>
 
             <article className="cv-role">
               <div className="cv-role-header">
                 <div>
-                  <h3>ASOS.com <span className="cv-via">via Sparta Global</span></h3>
+                  <h3>
+                    ASOS.com <span className="cv-via">via Sparta Global</span>
+                  </h3>
                   <span className="cv-role-title">DevOps Consultant</span>
                 </div>
-                <span className="cv-role-when">Jun 2021 - Jun 2023</span>
+                <span className="cv-role-when">Jun 2021 – Jun 2023</span>
               </div>
-              <p>
-                Supported automated testing and environment health across integrated
-                pre-production environments. Built data systems, observability tooling,
-                and automation to improve developer experience and incident response.
-              </p>
               <ul>
-                <li>Built and maintained Agradash, a React dashboard backed by ElasticSearch — 3,000+ views from 90 users, cutting root cause analysis time from hours to roughly 30 minutes.</li>
-                <li>Wrote Node.js/TypeScript backend functions for data aggregation, live service status, and environment availability metrics.</li>
-                <li>Designed a heuristics-based alerting system from scratch — Teams notifications within 5-10 minutes of environment changes, filtering genuine failures from noise.</li>
-                <li>Maintained 50 CI/CD pipelines (Jenkins) and automated test suites supporting ~30,000 test executions per week.</li>
-                <li>Built frontend monitoring achieving ~97% uptime during working hours.</li>
-                <li>Eliminated all security vulnerabilities across team repositories — from 7,000+ issues (100+ critical) to zero.</li>
+                <li>
+                  Built and maintained Agradash, a React dashboard backed by
+                  ElasticSearch: 3,000+ views from 90 users, cutting root cause
+                  analysis time from hours to roughly 30 minutes.
+                </li>
+                <li>
+                  Wrote Node.js/JavaScript backend functions for data
+                  aggregation, live service status, and environment availability
+                  metrics.
+                </li>
+                <li>
+                  Designed a heuristics-based alerting system from scratch:
+                  Teams notifications within 5-10 minutes of environment
+                  changes, filtering genuine failures from noise.
+                </li>
+                <li>
+                  Maintained 50 CI/CD pipelines (Jenkins) and automated test
+                  suites supporting ~30,000 test executions per week.
+                </li>
+                <li>
+                  Built frontend monitoring achieving ~97% uptime during working
+                  hours.
+                </li>
+                <li>
+                  Eliminated all security vulnerabilities across team
+                  repositories: from 7,000+ issues (100+ critical) to zero.
+                </li>
               </ul>
             </article>
 
@@ -171,13 +226,33 @@ export default function CVPage({ onBack }: Props) {
               <div className="cv-role-header">
                 <div>
                   <h3>Sparta Global</h3>
-                  <span className="cv-role-title">DevOps Training Programme</span>
+                  <span className="cv-role-title">
+                    DevOps Training Programme
+                  </span>
                 </div>
-                <span className="cv-role-when">Mar 2021 - May 2021</span>
+                <span className="cv-role-when">Mar – May 2021</span>
               </div>
               <p>
-                Intensive three-month AWS-based training in Python, Django, SQL / SSMS,
-                Docker, Terraform, CI/CD automation, and cloud infrastructure.
+                Intensive three-month AWS-based training in Python, Django, SQL
+                / SSMS, Docker, Terraform, CI/CD automation, and cloud
+                infrastructure.
+              </p>
+            </article>
+
+            <article className="cv-role cv-role-compact">
+              <div className="cv-role-header">
+                <div>
+                  <h3>Freelance</h3>
+                  <span className="cv-role-title">
+                    Technical &amp; Legal Translator, Italian / English
+                  </span>
+                </div>
+                <span className="cv-role-when">2011 – 2019</span>
+              </div>
+              <p>
+                Document translation across legal, technical, and commercial
+                domains. Eight years of working with precision and ambiguity;
+                useful habits for infrastructure code and documentation.
               </p>
             </article>
           </div>
@@ -191,11 +266,36 @@ export default function CVPage({ onBack }: Props) {
           <CVSprite name="flask" size={6} className="cv-section-sprite" />
           <div className="cv-illustrated-text">
             <h2>Independent projects</h2>
+            <article className="cv-role cv-role-compact">
+              <div className="cv-role-header">
+                <div>
+                  <h3>
+                    <a
+                      href="https://saveriocutrupi.com"
+                      target="_blank"
+                      rel="noopener noreferrer">
+                      saveriocutrupi.com
+                    </a>
+                  </h3>
+                  <span className="cv-role-title">
+                    k3s · Cloudflare Worker · React · TypeScript
+                  </span>
+                </div>
+                <span className="cv-role-when">2025 – present</span>
+              </div>
+              <p>
+                This site. Clicking “Launch Pods” creates a real Kubernetes
+                deployment on an Oracle Cloud VM via a Cloudflare Worker
+                proxying the k3s API. Live pod metrics come from metrics-server.
+                Per-pod restart, TTL cleanup, and a three-layer
+                orphan-prevention strategy are all running in production.
+              </p>
+            </article>
             <p>
-              Computer vision pipelines with OpenCV (image manipulation, convolution,
-              object detection). Statistical simulation tools including Monte Carlo
-              modelling. Currently building AI-driven automation and LLM-based tooling -
-              this site included.
+              Computer vision pipelines with OpenCV (image manipulation,
+              convolution, object detection). Statistical simulation tools
+              including Monte Carlo modelling. AI-driven automation and
+              LLM-based tooling.
             </p>
           </div>
         </div>
@@ -208,15 +308,15 @@ export default function CVPage({ onBack }: Props) {
             <h2>Education &amp; certification</h2>
             <div className="cv-edu-row">
               <div>
-                <strong>BA Linguistics</strong> — Sapienza Università di Roma
+                <strong>BA Linguistics</strong>, Sapienza Università di Roma
               </div>
-              <span className="cv-edu-when">2010 - 2017</span>
+              <span className="cv-edu-when">2017</span>
             </div>
             <div className="cv-edu-row">
               <div>
-                <strong>AZ-900: Azure Fundamentals</strong> — Microsoft
+                <strong>AZ-900: Azure Fundamentals</strong>, Microsoft
               </div>
-              <span className="cv-edu-when">Jan 2023</span>
+              <span className="cv-edu-when">2023</span>
             </div>
           </div>
           <CVSprite name="scroll" size={6} className="cv-section-sprite" />
@@ -231,15 +331,18 @@ export default function CVPage({ onBack }: Props) {
             <h2>From my manager's review</h2>
             <div className="cv-quote-grid">
               <blockquote>"Takes full ownership of his work"</blockquote>
-              <blockquote>"Does not wait for direction — he sees gaps and closes them"</blockquote>
+              <blockquote>
+                "Does not wait for direction. He sees gaps and closes them"
+              </blockquote>
               <blockquote>"When he commits to a task, he delivers"</blockquote>
-              <blockquote>"Treated infrastructure as code with the same rigor as application code"</blockquote>
+              <blockquote>
+                "Treated infrastructure as code with the same rigor as
+                application code"
+              </blockquote>
             </div>
           </div>
         </div>
       </section>
-
-
     </div>
   )
 }

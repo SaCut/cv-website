@@ -38,11 +38,29 @@ export default function App() {
   const [phase, setPhase] = useState<'idle' | 'config' | 'deploying' | 'deployed'>(
     saved ? 'deployed' : 'idle'
   )
-  const [showCV, setShowCV] = useState(false)
+  const [showCV, setShowCV] = useState(() => window.location.pathname === '/cv')
   const [config, setConfig] = useState<DeployConfig>(
     saved?.config ?? { creatureName: '', replicas: 3, strategy: 'RollingUpdate' }
   )
   const [creature, setCreature] = useState<CreatureData | null>(saved?.creature ?? null)
+
+  // Sync showCV with browser history (back/forward/mouse buttons 4+5)
+  useEffect(() => {
+    function onPopState() {
+      setShowCV(window.location.pathname === '/cv')
+    }
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [])
+
+  const handleViewCV = useCallback(() => {
+    history.pushState(null, '', '/cv')
+    setShowCV(true)
+  }, [])
+
+  const handleBackFromCV = useCallback(() => {
+    history.back()
+  }, [])
 
   const handleLaunch = useCallback(() => {
     if (creature !== null) {
@@ -82,7 +100,7 @@ export default function App() {
   if (showCV) {
     return (
       <div className="app">
-        <CVPage onBack={() => setShowCV(false)} />
+        <CVPage onBack={handleBackFromCV} />
       </div>
     )
   }
@@ -94,7 +112,7 @@ export default function App() {
       <section className="pano-landing">
         <LandingPage 
           onLaunch={handleLaunch} 
-          onViewCV={() => setShowCV(true)}
+          onViewCV={handleViewCV}
           hasDeployment={creature !== null}
         />
       </section>
@@ -124,6 +142,7 @@ function ConfigPanel({ onDeploy, onClose }: { onDeploy: (c: DeployConfig) => voi
   const [name, setName] = useState('')
   const [replicas, setReplicas] = useState(3)
   const [strategy, setStrategy] = useState<'RollingUpdate' | 'Recreate'>('RollingUpdate')
+  const [debugSprites, setDebugSprites] = useState(false)
 
   return (
     <div className="config-panel">
@@ -181,10 +200,19 @@ function ConfigPanel({ onDeploy, onClose }: { onDeploy: (c: DeployConfig) => voi
         </div>
       </div>
 
+      <label className="config-debug">
+        <input
+          type="checkbox"
+          checked={debugSprites}
+          onChange={e => setDebugSprites(e.target.checked)}
+        />
+        Save debug image to repo
+      </label>
+
       <button
         className="btn-deploy"
         disabled={!name.trim()}
-        onClick={() => onDeploy({ creatureName: name.trim(), replicas, strategy })}
+        onClick={() => onDeploy({ creatureName: name.trim(), replicas, strategy, debugSprites })}
       >
 Deploy
       </button>

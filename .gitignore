@@ -1,6 +1,7 @@
 cv_refs/
 node_modules/
 .env
+debug-sprites/
 package-lock.json
 **/_*
 

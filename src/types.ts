@@ -21,4 +21,6 @@ export interface DeployConfig {
   creatureName: string
   replicas: number
   strategy: 'RollingUpdate' | 'Recreate'
+  /** Save raw AI image + response JSON to debug-sprites/ in the repo (dev only). */
+  debugSprites?: boolean
 }

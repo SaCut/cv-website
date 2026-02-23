@@ -10,7 +10,7 @@ interface Props {
 
 /**
  * Renders an animated pixel sprite by cycling through frames.
- * Same visual language as the CV page sprites — CSS grid, rounded pixels, warm feel.
+ * Same visual language as the CV page sprites: CSS grid, rounded pixels, warm feel.
  */
 export default function PixelCreature({ creature, size = 5, phaseOffset = 0 }: Props) {
   const [frameIndex, setFrameIndex] = useState(0)
@@ -22,13 +22,16 @@ export default function PixelCreature({ creature, size = 5, phaseOffset = 0 }: P
     let mounted = true
     let interval: ReturnType<typeof setInterval>
 
+    // Vary frame rate slightly per creature so multiple pods drift out of sync
+    const frameMs = 200 + Math.floor((phaseOffset * 17) % 100)
+
     // Stagger start based on phaseOffset
     const delay = setTimeout(() => {
       if (!mounted) return
       interval = setInterval(() => {
         setFrameIndex(prev => (prev + 1) % frameCount)
-      }, 250) // 4 FPS — smooth enough for pixel art, charming tempo
-    }, phaseOffset * 60) // slight stagger between pods
+      }, frameMs)
+    }, phaseOffset * 60)
 
     return () => {
       mounted = false

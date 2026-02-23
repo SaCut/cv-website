@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import type { DeployConfig, CreatureData } from '../types'
-import { generateSprite, animateSprite, deployCreature } from '../api'
+import { generateSprite, deployCreature, rasterizeImageToGrid } from '../api'
 
 interface Props {
   config: DeployConfig
@@ -128,6 +128,8 @@ export default function Pipeline({ config, onComplete }: Props) {
     let spritePalette: Record<string, string> = {}
     let spriteShapes: any[] = []
     let spriteDescription = config.creatureName
+    /** Set when CF AI returned an image that was rasterised to a grid */
+    let gridRasterised = false
     let primaryColour = '#00d4ff'
     let completelyFailed = false
 
@@ -156,7 +158,7 @@ export default function Pipeline({ config, onComplete }: Props) {
             addLogToStage(i, spriteQuips[quipIdx++])
           }, 1500)
 
-          const spriteResult = await generateSprite(config.creatureName)
+          const spriteResult = await generateSprite(config.creatureName, config.debugSprites)
           clearInterval(quipTimer)
           if (c.current) return
 
@@ -166,6 +168,20 @@ export default function Pipeline({ config, onComplete }: Props) {
           spriteDescription = spriteResult.description
           primaryColour = spriteResult.primaryColour
           completelyFailed = spriteResult.failed && spriteShapes.length === 0
+
+          // CF AI returned a real image — rasterise it to 32×32 pixel grid on the spot
+          if (spriteResult.imageBase64) {
+            addLogToStage(i, `> Rasterising CF AI image to 32×32 grid...`)
+            baseFrame = await rasterizeImageToGrid(spriteResult.imageBase64)
+            if (c.current) return
+            if (baseFrame && baseFrame.length > 0) {
+              gridRasterised = true
+              addLogToStage(i, `> Sprite rasterised ✓`)
+            } else {
+              addLogToStage(i, `> ⚠ Rasterisation failed`)
+              completelyFailed = true
+            }
+          }
 
           if (spriteResult.failed) {
             addLogToStage(i, `> ⚠ ${spriteResult.notice || 'Sprite generation failed'}`)
@@ -179,39 +195,24 @@ export default function Pipeline({ config, onComplete }: Props) {
             } else {
               addLogToStage(i, `> Base sprite generated (degraded) ✓`)
             }
+          } else if (gridRasterised) {
+            addLogToStage(i, `> CF AI sprite ready ✓`)
           } else {
             addLogToStage(i, `> Base sprite generated ✓`)
           }
         }
-        // ── Test stage: Animate sprite ──
+        // ── Test stage: Set static sprite (animation disabled) ──
         else if (STAGES[i].id === 'test') {
           await addLogLines(i, stageLines.slice(0, -2), duration / (stageLines.length + 1), c)
           if (c.current) return
 
-          if (!completelyFailed && spriteShapes.length > 0) {
-            addLogToStage(i, `> Animating sprite...`)
-
-            const animResult = await animateSprite(spritePalette, spriteShapes, spriteDescription, config.creatureName)
-            if (c.current) return
-
-            if (animResult.failed || animResult.frames.length === 0) {
-              addLogToStage(i, `> ⚠ ${animResult.notice || 'Animation failed'} — using static sprite ✓`)
-              creatureRef.current = {
-                name: config.creatureName,
-                frames: [baseFrame, baseFrame, baseFrame, baseFrame],
-                primaryColour,
-              }
-            } else {
-              addLogToStage(i, `> Animation frames generated ✓`)
-              creatureRef.current = {
-                name: config.creatureName,
-                frames: [baseFrame, ...animResult.frames],
-                primaryColour,
-              }
-            }
+          addLogToStage(i, `> Sprite tests passed ✓`)
+          creatureRef.current = {
+            name: config.creatureName,
+            frames: [baseFrame, baseFrame, baseFrame, baseFrame],
+            primaryColour,
           }
 
-          // Show final test logs
           await addLogLines(i, stageLines.slice(-2), 200, c)
         }
         // ── Other stages: Normal logs ──
