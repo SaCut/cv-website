@@ -8,8 +8,20 @@ export interface CreatureData {
   deploymentName?: string
 }
 
-export type AppState = 'landing' | 'deploying' | 'deployed'
-export type StageStatus = 'pending' | 'running' | 'success' | 'failed'
+export type BgOp =
+  | { op: "flood_fill"; seeds: "edges" | "centre"; tolerance: number }
+  | {
+      op: "threshold"
+      channel: "r" | "g" | "b" | "luminance"
+      compare: ">" | "<"
+      value: number
+    }
+  | { op: "invert" }
+  | { op: "erode"; passes: number }
+  | { op: "dilate"; passes: number }
+
+export type AppState = "landing" | "deploying" | "deployed"
+export type StageStatus = "pending" | "running" | "success" | "failed"
 
 export interface PipelineStage {
   id: string
@@ -20,7 +32,7 @@ export interface PipelineStage {
 export interface DeployConfig {
   creatureName: string
   replicas: number
-  strategy: 'RollingUpdate' | 'Recreate'
+  strategy: "RollingUpdate" | "Recreate"
   /** Save raw AI image + response JSON to debug-sprites/ in the repo (dev only). */
   debugSprites?: boolean
 }

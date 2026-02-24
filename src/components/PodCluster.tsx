@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import type { CreatureData, DeployConfig } from "../types"
-import { getCreaturePods, getCreatureMetrics, restartPod, teardownCreature, type PodStatus, type PodMetric } from "../api"
+import { getCreaturePods, getCreatureMetrics, restartPod, teardownCreature, heartbeat, type PodStatus, type PodMetric } from "../api"
 import PixelCreature from "./PixelCreature"
 
 interface Props {
@@ -19,60 +19,52 @@ const r = (min: number, max: number) =>
 const IDLE_LOG_FNS: LogFn[] = [
   // health
   () => `[health] liveness probe: OK`,
-  () => `[health] readiness probe: OK (optimistic)`,
-  () => `[health] HTTP GET /healthz returned 200 (surprisingly)`,
-  () => `[health] probes passing. so far.`,
-  () => `[health] no crashes detected in the last ${r(5, 90)}s`,
-  () => `[health] heartbeat detected. still alive.`,
-  () => `[health] wellness check: ambivalent but functional`,
+  () => `[health] readiness probe: OK`,
+  () => `[health] HTTP GET /healthz → 200 OK`,
+  () => `[health] probes passing`,
+  () => `[health] no crashes in the last ${r(5, 90)}s`,
+  () => `[health] heartbeat received`,
+  () => `[health] self-check passed`,
   // metrics
-  () => `[metrics] cpu: ${r(5, 35)}m (barely awake)`,
-  () => `[metrics] mem: ${r(50, 150)}Mi (and climbing)`,
-  () => `[metrics] requests: ${r(0, 12)}/s (honestly not bad)`,
-  () => `[metrics] p95 latency: ${r(10, 60)}ms (we've seen worse)`,
-  () => `[metrics] GC pause: ${r(1, 9)}ms (acceptable, barely)`,
-  () => `[metrics] cache hit ratio: ${r(74, 96)}% (not terrible)`,
+  () => `[metrics] cpu: ${r(5, 35)}m`,
+  () => `[metrics] mem: ${r(50, 150)}Mi`,
+  () => `[metrics] requests: ${r(0, 12)}/s`,
+  () => `[metrics] p95 latency: ${r(10, 60)}ms`,
+  () => `[metrics] GC pause: ${r(1, 9)}ms`,
+  () => `[metrics] cache hit ratio: ${r(74, 96)}%`,
   () => `[metrics] network rx: ${r(50, 500)}KB/s, tx: ${r(20, 300)}KB/s`,
-  () => `[metrics] goroutines: ${r(10, 42)} (manageable chaos)`,
+  () => `[metrics] goroutines: ${r(10, 42)}`,
   () => `[metrics] connection pool: ${r(2, 7)}/10 active`,
-  () => `[metrics] open file descriptors: ${r(48, 160)} (fine. probably.)`,
+  () => `[metrics] open file descriptors: ${r(48, 160)}`,
   // main
-  () => `[main] animation loop running. still. somehow.`,
-  () => `[main] frame ${r(1, 6)}/6 rendered without incident`,
-  () => `[main] pixel pipeline operational (knock on wood)`,
-  () => `[main] sprite cache loaded. hope you like it.`,
-  () => `[main] vsync aligned (we think)`,
-  () => `[main] no errors in the last ${r(5, 120)} seconds. suspicious.`,
-  () => `[main] render batch complete. moving on.`,
+  () => `[main] animation loop running`,
+  () => `[main] frame ${r(1, 6)} rendered`,
+  () => `[main] pixel pipeline operational`,
+  () => `[main] sprite cache warm`,
+  () => `[main] vsync aligned`,
+  () => `[main] no errors in the last ${r(5, 120)}s`,
+  () => `[main] render batch complete`,
   () => `[main] transparency layer: mostly transparent`,
-  () => `[main] background task idle. as intended. we hope.`,
-  () => `[main] event loop lag: ${r(0, 4)}ms (tolerable)`,
-  () => `[main] session count: ${r(1, 60)} active users (allegedly)`,
-  () => `[main] antialiasing disabled. it's pixel art. obviously.`,
-  () => `[main] graceful degradation standing by (hopefully unused)`,
-  () => `[main] everything nominal. why does that worry us.`,
-  () => `[main] accepting connections. reluctantly.`,
-  () => `[main] processing queue: ${r(0, 6)} items (we're on it)`,
-  () => `[main] cache eviction freed ${r(4, 28)}MB. you're welcome.`,
+  () => `[main] background task idle`,
+  () => `[main] event loop lag: ${r(0, 4)}ms`,
+  () => `[main] ${r(1, 60)} active sessions`,
+  () => `[main] antialiasing disabled. it's pixel art.`,
+  () => `[main] accepting connections`,
+  () => `[main] processing queue: ${r(0, 6)} items pending`,
+  () => `[main] cache eviction freed ${r(4, 28)}MB`,
   // warn
-  () => `[warn] upstream service timeout. retry ${r(1, 3)}/3 planned.`,
-  () =>
-    `[warn] slow query detected: ${r(200, 1100)}ms. someone investigate that.`,
-  () =>
-    `[warn] redis connection dropped. using stale cache. it's fine. probably.`,
-  () =>
-    `[warn] disk usage ${r(70, 90)}%. someone should look at that eventually.`,
-  () =>
-    `[warn] certificate expires in ${r(1, 45)} days. renewing would be wise.`,
-  () =>
-    `[warn] client used deprecated endpoint. they were informed. they don't care.`,
-  () => `[warn] unusual traffic detected. monitoring. or possibly ignoring.`,
-  () =>
-    `[warn] DNS resolution took ${r(500, 1100)}ms. the internet is slow today.`,
-  () => `[warn] graceful shutdown requested. request noted and filed.`,
-  () => `[warn] malformed request rejected. sorry not sorry.`,
-  () => `[warn] rate limit approaching: ${r(88, 99)}/100. slow down.`,
-  () => `[warn] health check missed. probably just network jitter. probably.`,
+  () => `[warn] upstream service timeout — retry ${r(1, 3)}/3`,
+  () => `[warn] slow query detected: ${r(200, 1100)}ms`,
+  () => `[warn] redis reconnect in progress`,
+  () => `[warn] disk at ${r(70, 90)}% capacity`,
+  () => `[warn] certificate expires in ${r(1, 45)} days`,
+  () => `[warn] client on deprecated endpoint. notified. still using it.`,
+  () => `[warn] elevated traffic — monitoring`,
+  () => `[warn] DNS lookup: ${r(500, 1100)}ms`,
+  () => `[warn] graceful shutdown signal received. queued.`,
+  () => `[warn] malformed request dropped`,
+  () => `[warn] rate limit: ${r(88, 99)}/100`,
+  () => `[warn] health check missed — likely network jitter`,
 ]
 
 function shuffle<T>(arr: T[]): T[] {
@@ -352,6 +344,39 @@ export default function PodCluster({ creature, config, onReset, onRelaunch }: Pr
     return () => {
       active = false
       clearInterval(interval)
+    }
+  }, [creature.deploymentName])
+
+  // Heartbeat — ping worker every 2 min while tab is visible so TTL resets
+  useEffect(() => {
+    if (!creature.deploymentName) return
+    const name = creature.deploymentName
+
+    let interval: ReturnType<typeof setInterval> | null = null
+
+    function start() {
+      heartbeat(name)
+      interval = setInterval(() => heartbeat(name), 2 * 60 * 1000)
+    }
+
+    function stop() {
+      if (interval !== null) {
+        clearInterval(interval)
+        interval = null
+      }
+    }
+
+    function onVisibility() {
+      if (document.visibilityState === 'hidden') stop()
+      else start()
+    }
+
+    document.addEventListener('visibilitychange', onVisibility)
+    start()
+
+    return () => {
+      stop()
+      document.removeEventListener('visibilitychange', onVisibility)
     }
   }, [creature.deploymentName])
 

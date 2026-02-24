@@ -5,7 +5,7 @@
 **Live:** [saveriocutrupi.com](https://saveriocutrupi.com)
 
 An interactive CV that doubles as a live platform engineering demo.
-The deployment pipeline on the site is not simulated — clicking "Deploy" creates a real Kubernetes pod on an Oracle Cloud VM, visible to anyone who clicks at the same time.
+The deployment pipeline on the site is not simulated — clicking "Deploy" creates a real Kubernetes pod on an Oracle Cloud VM, shared with any other visitors on the site concurrently.
 
 ---
 
@@ -66,14 +66,14 @@ flowchart TD
 
 ## Cost
 
-| Resource | Cost |
-|---|---|
-| Oracle Cloud VM (free tier — always free) | £0 |
-| Cloudflare Workers + Tunnel (free tier) | £0 |
-| GitHub Actions + Pages | £0 |
-| Terraform | £0 |
-| Domain (already owned) | £0 |
-| **Total** | **£0/month** |
+| Resource                                  | Cost         |
+| ----------------------------------------- | ------------ |
+| Oracle Cloud VM (free tier — always free) | £0           |
+| Cloudflare Workers + Tunnel (free tier)   | £0           |
+| GitHub Actions + Pages                    | £0           |
+| Terraform                                 | £0           |
+| Domain (already owned)                    | £0           |
+| **Total**                                 | **£0/month** |
 
 ---
 
@@ -100,10 +100,10 @@ src/                  React frontend (TypeScript, Three.js)
 | Component  | Detail                                                                                     |
 | ---------- | ------------------------------------------------------------------------------------------ |
 | VM         | Oracle Cloud `VM.Standard.E5.Flex`, 1 OCPU / 12 GB, Ubuntu 24.04, uk-london-1              |
-| Kubernetes | k3s v1.34.4 + metrics-server (patched `--kubelet-insecure-tls`)                          |
+| Kubernetes | k3s v1.34.4 + metrics-server (patched `--kubelet-insecure-tls`)                            |
 | Tunnel     | `cloudflared` v2026.2.0, systemd service, routes `k3s.saveriocutrupi.com → localhost:6443` |
-| Worker     | `pipeline-cv-worker.xartab-mail-flare.workers.dev` — cron every 10 min (orphan cleanup)  |
-| RBAC       | SA `creature-manager`, Role scoped to `creatures`: apps/pods/metrics.k8s.io              |
+| Worker     | `pipeline-cv-worker.xartab-mail-flare.workers.dev` — cron every 10 min (orphan cleanup)    |
+| RBAC       | SA `creature-manager`, Role scoped to `creatures`: apps/pods/metrics.k8s.io                |
 
 ---
 

@@ -1,8 +1,10 @@
-import type { CreatureData } from './types'
-import { getRandomCreature } from './data/creatures'
-import { logSpriteResponse } from './debug'
+import type { CreatureData, BgOp } from "./types"
+import { getRandomCreature } from "./data/creatures"
+import { logSpriteResponse } from "./debug"
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://pipeline-cv-worker.xartab-mail-flare.workers.dev'
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  "https://pipeline-cv-worker.xartab-mail-flare.workers.dev"
 
 export interface GenerateResult {
   creature: CreatureData
@@ -33,7 +35,10 @@ function pickQuip(quips: string[]): string {
 }
 
 /** Generate base sprite (CF Workers AI image, or Q1 describe → Q2 structure → Q3 colour fallback). */
-export async function generateSprite(name: string, debug = false): Promise<{
+export async function generateSprite(
+  name: string,
+  debug = false,
+): Promise<{
   frame: any
   palette: Record<string, string>
   shapes: any[]
@@ -42,6 +47,8 @@ export async function generateSprite(name: string, debug = false): Promise<{
   failed: boolean
   /** Base64 PNG returned by CF Workers AI — skips animation pipeline when present. */
   imageBase64?: string
+  /** Background removal operation plan chosen by the vision model. */
+  bgOps?: BgOp[]
   notice?: string
 }> {
   if (!API_URL) {
@@ -62,15 +69,15 @@ export async function generateSprite(name: string, debug = false): Promise<{
     const timeout = setTimeout(() => controller.abort(), 30000)
 
     const res = await fetch(`${API_URL}/generate-sprite`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ prompt: name }),
       signal: controller.signal,
     })
 
     clearTimeout(timeout)
 
-    if (!res.ok || !res.headers.get('content-type')?.includes('json')) {
+    if (!res.ok || !res.headers.get("content-type")?.includes("json")) {
       const fallback = getRandomCreature(name)
       return {
         frame: fallback.frames[0],
@@ -85,17 +92,17 @@ export async function generateSprite(name: string, debug = false): Promise<{
 
     const data = await res.json()
 
-    // CF Workers AI image path — base64 PNG for frontend rasterisation
+    // CF Workers AI image path — base64 for frontend rasterisation
     if (data.imageBase64) {
-      // Fire-and-forget: log to debug-sprites/ if debug mode is on.
       if (debug) logSpriteResponse(name, data.imageBase64, data).catch(() => {})
       return {
         frame: null,
         palette: {},
         shapes: [],
         description: name,
-        primaryColour: data.primaryColour || '#00d4ff',
+        primaryColour: data.primaryColour || "#00d4ff",
         imageBase64: data.imageBase64,
+        bgOps: Array.isArray(data.bgOps) ? (data.bgOps as BgOp[]) : undefined,
         failed: false,
       }
     }
@@ -118,11 +125,11 @@ export async function generateSprite(name: string, debug = false): Promise<{
       palette: data.palette,
       shapes: data.shapes,
       description: data.description || name,
-      primaryColour: data.primaryColour || '#00d4ff',
+      primaryColour: data.primaryColour || "#00d4ff",
       failed: false,
     }
   } catch (err) {
-    console.error('Sprite generation error:', err)
+    console.error("Sprite generation error:", err)
     const fallback = getRandomCreature(name)
     return {
       frame: fallback.frames[0],
@@ -151,7 +158,7 @@ export async function animateSprite(
     return {
       frames: [],
       failed: true,
-      notice: 'No sprite data to animate.',
+      notice: "No sprite data to animate.",
     }
   }
 
@@ -160,19 +167,19 @@ export async function animateSprite(
     const timeout = setTimeout(() => controller.abort(), 30000)
 
     const res = await fetch(`${API_URL}/animate-sprite`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ palette, shapes, description, name }),
       signal: controller.signal,
     })
 
     clearTimeout(timeout)
 
-    if (!res.ok || !res.headers.get('content-type')?.includes('json')) {
+    if (!res.ok || !res.headers.get("content-type")?.includes("json")) {
       return {
         frames: [],
         failed: true,
-        notice: 'Animation service unavailable.',
+        notice: "Animation service unavailable.",
       }
     }
 
@@ -182,7 +189,7 @@ export async function animateSprite(
       return {
         frames: [],
         failed: true,
-        notice: 'Animation generation failed.',
+        notice: "Animation generation failed.",
       }
     }
 
@@ -191,11 +198,11 @@ export async function animateSprite(
       failed: false,
     }
   } catch (err) {
-    console.error('Animation error:', err)
+    console.error("Animation error:", err)
     return {
       frames: [],
       failed: true,
-      notice: 'Animation generation error.',
+      notice: "Animation generation error.",
     }
   }
 }
@@ -204,101 +211,345 @@ export async function animateSprite(
    CF AI IMAGE → PIXEL GRID RASTERISATION
    ═══════════════════════════════════════════════════════ */
 
-import type { PixelFrame } from './types'
+import type { PixelFrame } from "./types"
 
 /**
- * Draw a base64 image onto a hidden 32×32 canvas and extract a
- * palette-quantised pixel grid. Near-black pixels are treated as
- * transparent background (the CF AI prompt requests #000 bg).
+ * Unsharp mask over a flat RGBA Uint8ClampedArray.
+ * Sharpens edges before colour sampling to produce crisper pixel art.
+ * amount=1.5 gives strong sharpening without visible haloing.
  */
-export function rasterizeImageToGrid(imageBase64: string, size = 32): Promise<PixelFrame> {
+function unsharpMask(
+  src: Uint8ClampedArray,
+  width: number,
+  height: number,
+  amount = 1.5,
+): Uint8ClampedArray {
+  const blur = new Uint8ClampedArray(src.length)
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      let rS = 0,
+        gS = 0,
+        bS = 0,
+        cnt = 0
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const nx = x + dx,
+            ny = y + dy
+          if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue
+          const ni = (ny * width + nx) * 4
+          rS += src[ni]
+          gS += src[ni + 1]
+          bS += src[ni + 2]
+          cnt++
+        }
+      }
+      const ci = (y * width + x) * 4
+      blur[ci] = rS / cnt
+      blur[ci + 1] = gS / cnt
+      blur[ci + 2] = bS / cnt
+      blur[ci + 3] = src[ci + 3]
+    }
+  }
+
+  const out = new Uint8ClampedArray(src.length)
+  for (let i = 0; i < src.length; i += 4) {
+    out[i] = Math.min(255, Math.max(0, src[i] + amount * (src[i] - blur[i])))
+    out[i + 1] = Math.min(
+      255,
+      Math.max(0, src[i + 1] + amount * (src[i + 1] - blur[i + 1])),
+    )
+    out[i + 2] = Math.min(
+      255,
+      Math.max(0, src[i + 2] + amount * (src[i + 2] - blur[i + 2])),
+    )
+    out[i + 3] = src[i + 3]
+  }
+
+  return out
+}
+
+/**
+ * Draw a base64 image onto a canvas at native resolution and extract a
+ * palette-quantised pixel grid. Matches the lab pipeline exactly:
+ * single native canvas, per-source-pixel bg mask (default tol=15 + erode 1),
+ * unsharp before sampling, inner-block mode colour pick.
+ */
+export function rasterizeImageToGrid(
+  imageBase64: string,
+  size = 32,
+  bgOps?: BgOp[],
+): Promise<PixelFrame> {
   return new Promise((resolve) => {
     const img = new Image()
     img.onload = () => {
-      const canvas = document.createElement('canvas')
-      canvas.width = size
-      canvas.height = size
-      const ctx = canvas.getContext('2d')!
+      // Single native-resolution canvas — matches the lab pipeline exactly.
+      // No small-scale pass; bg mask and colour sampling both operate at native scale.
+      const nativeSize = Math.max(img.naturalWidth || 512, 512)
+      const nCanvas = document.createElement("canvas")
+      nCanvas.width = nativeSize
+      nCanvas.height = nativeSize
+      const nCtx = nCanvas.getContext("2d")!
+      nCtx.imageSmoothingEnabled = false
+      const nCrop = nativeSize * 0.07
+      nCtx.drawImage(
+        img,
+        -nCrop,
+        -nCrop,
+        nativeSize + nCrop * 2,
+        nativeSize + nCrop * 2,
+      )
+      const raw = nCtx.getImageData(0, 0, nativeSize, nativeSize).data
 
-      // Smoothing ON: browser averages the source block per output pixel instead
-      // of picking a single random sample (nearest-neighbour = rainbow noise).
-      ctx.imageSmoothingEnabled = true
-      ctx.imageSmoothingQuality = 'high'
-      // Draw slightly zoomed in (~7%) to clip the vignette/dark-border artifact
-      // that SDXL Lightning consistently adds around the edges.
-      const crop = size * 0.07
-      ctx.drawImage(img, -crop, -crop, size + crop * 2, size + crop * 2)
-      const data = ctx.getImageData(0, 0, size, size).data
+      // ── Bg mask at native resolution ─────────────────────────────────────
+      // Per-source-pixel mask; checked per-pixel during sampling, not per cell.
+      const cornerIdxs = [
+        0,
+        (nativeSize - 1) * 4,
+        nativeSize * (nativeSize - 1) * 4,
+        (nativeSize * nativeSize - 1) * 4,
+      ]
+      const bgR = Math.round(cornerIdxs.reduce((s, i) => s + raw[i], 0) / 4)
+      const bgG = Math.round(cornerIdxs.reduce((s, i) => s + raw[i + 1], 0) / 4)
+      const bgB = Math.round(cornerIdxs.reduce((s, i) => s + raw[i + 2], 0) / 4)
 
-      // --- Adaptive flood-fill background removal ---
-      // Sample the four corners to find what colour the model actually used as
-      // background (it often ignores the magenta prompt and uses light/white).
-      // If the corners score highly as magenta (R+B-G*2 > 80) use chroma-key;
-      // otherwise fall back to Euclidean distance from the sampled corner colour.
-      const cornerIdxs = [0, (size-1)*4, size*(size-1)*4, (size*size-1)*4]
-      const bgR = Math.round(cornerIdxs.reduce((s,i) => s + data[i],   0) / 4)
-      const bgG = Math.round(cornerIdxs.reduce((s,i) => s + data[i+1], 0) / 4)
-      const bgB = Math.round(cornerIdxs.reduce((s,i) => s + data[i+2], 0) / 4)
+      const isBgAt = (idx: number, tol: number) =>
+        Math.abs(raw[idx] - bgR) +
+          Math.abs(raw[idx + 1] - bgG) +
+          Math.abs(raw[idx + 2] - bgB) <
+        tol * 3
 
-      const magentaScore = bgR + bgB - bgG * 2
-      const TOLERANCE = magentaScore > 80 ? 80 : 45  // tighter for plain colours
+      const nativeMask = new Uint8Array(nativeSize * nativeSize) // 1 = background
 
-      const isBg = (idx: number) => {
-        const r = data[idx], g = data[idx+1], b = data[idx+2]
-        if (magentaScore > 80) return (r + b - g * 2) > TOLERANCE
-        return Math.abs(r - bgR) + Math.abs(g - bgG) + Math.abs(b - bgB) < TOLERANCE * 3
-      }
+      const ops: BgOp[] = bgOps?.length
+        ? bgOps
+        : [
+            { op: "flood_fill", seeds: "edges", tolerance: 15 },
+            { op: "erode", passes: 1 },
+          ]
 
-      const visited = new Uint8Array(size * size) // 1 = background
+      for (const op of ops) {
+        switch (op.op) {
+          case "flood_fill": {
+            const q: number[] = []
 
-      // Seed flood-fill from every edge pixel that matches background.
-      const queue: number[] = []
-      for (let x = 0; x < size; x++) {
-        for (const y of [0, size - 1]) {
-          const p = y * size + x
-          if (isBg(p * 4) && !visited[p]) { visited[p] = 1; queue.push(p) }
+            if (op.seeds === "edges") {
+              for (let x = 0; x < nativeSize; x++) {
+                for (const y of [0, nativeSize - 1]) {
+                  const p = y * nativeSize + x
+                  if (isBgAt(p * 4, op.tolerance) && !nativeMask[p]) {
+                    nativeMask[p] = 1
+                    q.push(p)
+                  }
+                }
+              }
+              for (let y = 1; y < nativeSize - 1; y++) {
+                for (const x of [0, nativeSize - 1]) {
+                  const p = y * nativeSize + x
+                  if (isBgAt(p * 4, op.tolerance) && !nativeMask[p]) {
+                    nativeMask[p] = 1
+                    q.push(p)
+                  }
+                }
+              }
+            } else {
+              const rad = Math.floor(nativeSize * 0.15)
+              const cx = Math.floor(nativeSize / 2),
+                cy = Math.floor(nativeSize / 2)
+              for (let dy = -rad; dy <= rad; dy++) {
+                for (let dx = -rad; dx <= rad; dx++) {
+                  const sx = cx + dx,
+                    sy = cy + dy
+                  if (sx < 0 || sx >= nativeSize || sy < 0 || sy >= nativeSize)
+                    continue
+                  const p = sy * nativeSize + sx
+                  if (!isBgAt(p * 4, op.tolerance) && !nativeMask[p]) {
+                    nativeMask[p] = 1
+                    q.push(p)
+                  }
+                }
+              }
+            }
+
+            let qi = 0
+            while (qi < q.length) {
+              const p = q[qi++]
+              const px = p % nativeSize,
+                py = Math.floor(p / nativeSize)
+              for (const [ndx, ndy] of [
+                [-1, 0],
+                [1, 0],
+                [0, -1],
+                [0, 1],
+              ]) {
+                const nx = px + ndx,
+                  ny = py + ndy
+                if (nx < 0 || nx >= nativeSize || ny < 0 || ny >= nativeSize)
+                  continue
+                const np = ny * nativeSize + nx
+                const match =
+                  op.seeds === "edges"
+                    ? isBgAt(np * 4, op.tolerance)
+                    : !isBgAt(np * 4, op.tolerance)
+                if (!nativeMask[np] && match) {
+                  nativeMask[np] = 1
+                  q.push(np)
+                }
+              }
+            }
+
+            break
+          }
+
+          case "threshold": {
+            for (let i = 0; i < nativeSize * nativeSize; i++) {
+              const idx = i * 4
+              let val: number
+              switch (op.channel) {
+                case "r":
+                  val = raw[idx]
+                  break
+                case "g":
+                  val = raw[idx + 1]
+                  break
+                case "b":
+                  val = raw[idx + 2]
+                  break
+                case "luminance":
+                  val = (raw[idx] + raw[idx + 1] + raw[idx + 2]) / 3
+                  break
+              }
+              const pass = op.compare === ">" ? val > op.value : val < op.value
+              if (pass) nativeMask[i] = 1
+            }
+
+            break
+          }
+
+          case "invert": {
+            for (let i = 0; i < nativeSize * nativeSize; i++)
+              nativeMask[i] = nativeMask[i] ? 0 : 1
+
+            break
+          }
+
+          case "erode": {
+            for (let pass = 0; pass < op.passes; pass++) {
+              const toErase: number[] = []
+              for (let y = 0; y < nativeSize; y++) {
+                for (let x = 0; x < nativeSize; x++) {
+                  const p = y * nativeSize + x
+                  if (nativeMask[p]) continue
+                  for (const [ndx, ndy] of [
+                    [-1, 0],
+                    [1, 0],
+                    [0, -1],
+                    [0, 1],
+                  ]) {
+                    const nx = x + ndx,
+                      ny = y + ndy
+                    if (
+                      nx < 0 ||
+                      nx >= nativeSize ||
+                      ny < 0 ||
+                      ny >= nativeSize ||
+                      nativeMask[ny * nativeSize + nx]
+                    ) {
+                      toErase.push(p)
+                      break
+                    }
+                  }
+                }
+              }
+              for (const p of toErase) nativeMask[p] = 1
+            }
+
+            break
+          }
+
+          case "dilate": {
+            for (let pass = 0; pass < op.passes; pass++) {
+              const toFill: number[] = []
+              for (let y = 0; y < nativeSize; y++) {
+                for (let x = 0; x < nativeSize; x++) {
+                  const p = y * nativeSize + x
+                  if (!nativeMask[p]) continue
+                  for (const [ndx, ndy] of [
+                    [-1, 0],
+                    [1, 0],
+                    [0, -1],
+                    [0, 1],
+                  ]) {
+                    const nx = x + ndx,
+                      ny = y + ndy
+                    if (
+                      nx >= 0 &&
+                      nx < nativeSize &&
+                      ny >= 0 &&
+                      ny < nativeSize &&
+                      !nativeMask[ny * nativeSize + nx]
+                    ) {
+                      toFill.push(p)
+                      break
+                    }
+                  }
+                }
+              }
+              for (const p of toFill) nativeMask[p] = 0
+            }
+
+            break
+          }
         }
       }
-      for (let y = 1; y < size - 1; y++) {
-        for (const x of [0, size - 1]) {
-          const p = y * size + x
-          if (isBg(p * 4) && !visited[p]) { visited[p] = 1; queue.push(p) }
-        }
-      }
 
-      // BFS — spread to 4-connected neighbours that also look like background.
-      let qi = 0
-      while (qi < queue.length) {
-        const p = queue[qi++]
-        const px = p % size, py = Math.floor(p / size)
-        for (const [dx, dy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
-          const nx = px + dx, ny = py + dy
-          if (nx < 0 || nx >= size || ny < 0 || ny >= size) continue
-          const np = ny * size + nx
-          if (!visited[np] && isBg(np * 4)) { visited[np] = 1; queue.push(np) }
-        }
-      }
+      // ── Colour sampling from sharpened native image ───────────────────────
+      const nd = unsharpMask(raw, nativeSize, nativeSize, 1.5)
 
-      // Build the grid: background pixels → null, sprite pixels → quantised hex.
+      const blockSize = nativeSize / size
+      // Skip outer 30% of each block — avoids sampling straddling pixels.
+      const INNER = 0.3
+
       const grid: PixelFrame = []
-      for (let y = 0; y < size; y++) {
+      for (let gy = 0; gy < size; gy++) {
         const row: (string | null)[] = []
-        for (let x = 0; x < size; x++) {
-          const p = y * size + x
-          if (visited[p] || data[p * 4 + 3] < 128) {
+        for (let gx = 0; gx < size; gx++) {
+          const x0 = Math.floor((gx + INNER) * blockSize)
+          const x1 = Math.ceil((gx + 1 - INNER) * blockSize)
+          const y0 = Math.floor((gy + INNER) * blockSize)
+          const y1 = Math.ceil((gy + 1 - INNER) * blockSize)
+          const freq = new Map<string, number>()
+
+          for (let sy = y0; sy < y1; sy++) {
+            for (let sx = x0; sx < x1; sx++) {
+              // Per-source-pixel bg check — matches lab behaviour.
+              if (nativeMask[sy * nativeSize + sx]) continue
+              const si = (sy * nativeSize + sx) * 4
+              if (nd[si + 3] < 128) continue
+              const qr = Math.min(Math.round(nd[si] / 32) * 32, 252)
+              const qg = Math.min(Math.round(nd[si + 1] / 32) * 32, 252)
+              const qb = Math.min(Math.round(nd[si + 2] / 32) * 32, 252)
+              const hex =
+                "#" +
+                qr.toString(16).padStart(2, "0") +
+                qg.toString(16).padStart(2, "0") +
+                qb.toString(16).padStart(2, "0")
+              freq.set(hex, (freq.get(hex) ?? 0) + 1)
+            }
+          }
+
+          if (freq.size === 0) {
             row.push(null)
           } else {
-            // 8 levels per channel (step 36): 512 possible colours — enough for
-            // a sprite, few enough to look like deliberate pixel art.
-            const qr = Math.min(Math.round(data[p * 4]     / 36) * 36, 255)
-            const qg = Math.min(Math.round(data[p * 4 + 1] / 36) * 36, 255)
-            const qb = Math.min(Math.round(data[p * 4 + 2] / 36) * 36, 255)
-            row.push(
-              '#' +
-              qr.toString(16).padStart(2, '0') +
-              qg.toString(16).padStart(2, '0') +
-              qb.toString(16).padStart(2, '0'),
-            )
+            let best = "",
+              bestCount = 0
+            for (const [hex, count] of freq) {
+              if (count > bestCount) {
+                best = hex
+                bestCount = count
+              }
+            }
+            row.push(best)
           }
         }
         grid.push(row)
@@ -328,7 +579,7 @@ export async function animateGrid(name: string): Promise<{
   notice?: string
 }> {
   if (!API_URL) {
-    return { regions: [], failed: true, notice: 'No API URL configured.' }
+    return { regions: [], failed: true, notice: "No API URL configured." }
   }
 
   try {
@@ -336,24 +587,30 @@ export async function animateGrid(name: string): Promise<{
     const timeout = setTimeout(() => controller.abort(), 30000)
 
     const res = await fetch(`${API_URL}/animate-sprite`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, gridMode: true }),
       signal: controller.signal,
     })
 
     clearTimeout(timeout)
 
-    if (!res.ok || !res.headers.get('content-type')?.includes('json')) {
-      return { regions: [], failed: true, notice: 'Grid animation service unavailable.' }
+    if (!res.ok || !res.headers.get("content-type")?.includes("json")) {
+      return {
+        regions: [],
+        failed: true,
+        notice: "Grid animation service unavailable.",
+      }
     }
 
     const data = await res.json()
-    const regions: GridRegion[] = Array.isArray(data.regions) ? data.regions : []
+    const regions: GridRegion[] = Array.isArray(data.regions)
+      ? data.regions
+      : []
     return { regions, failed: regions.length === 0 }
   } catch (err) {
-    console.error('Grid animation error:', err)
-    return { regions: [], failed: true, notice: 'Grid animation error.' }
+    console.error("Grid animation error:", err)
+    return { regions: [], failed: true, notice: "Grid animation error." }
   }
 }
 
@@ -361,13 +618,16 @@ export async function animateGrid(name: string): Promise<{
  * Apply region pixel-shifts to a base grid to produce 3 animation frames.
  * For each frame: deep-copy the base, clear source regions, paint shifted pixels.
  */
-export function buildGridFrames(baseGrid: PixelFrame, regions: GridRegion[]): PixelFrame[] {
+export function buildGridFrames(
+  baseGrid: PixelFrame,
+  regions: GridRegion[],
+): PixelFrame[] {
   const size = baseGrid.length
   if (size === 0 || regions.length === 0) return []
 
-  return [0, 1, 2].map(frameIdx => {
+  return [0, 1, 2].map((frameIdx) => {
     // Deep copy base
-    const frame: PixelFrame = baseGrid.map(row => [...row])
+    const frame: PixelFrame = baseGrid.map((row) => [...row])
 
     for (const region of regions) {
       const [dx, dy] = region.offsets[frameIdx] || [0, 0]
@@ -435,22 +695,22 @@ export interface PodsResult {
 export async function deployCreature(
   name: string,
   replicas: number,
-  strategy: 'RollingUpdate' | 'Recreate',
+  strategy: "RollingUpdate" | "Recreate",
 ): Promise<DeployResult> {
   try {
     const res = await fetch(`${API_URL}/k8s/deploy`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, replicas, strategy }),
     })
 
-    const data = await res.json() as any
+    const data = (await res.json()) as any
 
     if (!res.ok) {
       return {
-        deployment: '',
+        deployment: "",
         replicas: 0,
-        strategy: '',
+        strategy: "",
         ttl: 0,
         error: data.error || `HTTP ${res.status}`,
       }
@@ -458,34 +718,59 @@ export async function deployCreature(
 
     return data as DeployResult
   } catch (err) {
-    console.error('Deploy error:', err)
-    return { deployment: '', replicas: 0, strategy: '', ttl: 0, error: 'Network error' }
+    console.error("Deploy error:", err)
+    return {
+      deployment: "",
+      replicas: 0,
+      strategy: "",
+      ttl: 0,
+      error: "Network error",
+    }
   }
 }
 
 /** Poll pod status for a creature deployment. */
 export async function getCreaturePods(deployment: string): Promise<PodsResult> {
   try {
-    const res = await fetch(`${API_URL}/k8s/pods?deployment=${encodeURIComponent(deployment)}`)
-    const data = await res.json() as any
+    const res = await fetch(
+      `${API_URL}/k8s/pods?deployment=${encodeURIComponent(deployment)}`,
+    )
+    const data = (await res.json()) as any
 
     if (!res.ok) {
-      return { deployment, exists: false, replicas: 0, readyReplicas: 0, pods: [], error: data.error }
+      return {
+        deployment,
+        exists: false,
+        replicas: 0,
+        readyReplicas: 0,
+        pods: [],
+        error: data.error,
+      }
     }
 
     return data as PodsResult
   } catch (err) {
-    console.error('Pod status error:', err)
-    return { deployment, exists: false, replicas: 0, readyReplicas: 0, pods: [], error: 'Network error' }
+    console.error("Pod status error:", err)
+    return {
+      deployment,
+      exists: false,
+      replicas: 0,
+      readyReplicas: 0,
+      pods: [],
+      error: "Network error",
+    }
   }
 }
 
 /** Tear down a creature deployment. */
 export async function teardownCreature(deployment: string): Promise<boolean> {
   try {
-    const res = await fetch(`${API_URL}/k8s/deploy/${encodeURIComponent(deployment)}`, {
-      method: 'DELETE',
-    })
+    const res = await fetch(
+      `${API_URL}/k8s/deploy/${encodeURIComponent(deployment)}`,
+      {
+        method: "DELETE",
+      },
+    )
     return res.ok
   } catch {
     return false
@@ -499,10 +784,14 @@ export interface PodMetric {
 }
 
 /** Fetch real CPU/mem metrics for pods in a deployment (metrics-server). */
-export async function getCreatureMetrics(deployment: string): Promise<PodMetric[]> {
+export async function getCreatureMetrics(
+  deployment: string,
+): Promise<PodMetric[]> {
   try {
-    const res = await fetch(`${API_URL}/k8s/pod-metrics?deployment=${encodeURIComponent(deployment)}`)
-    const data = await res.json() as any
+    const res = await fetch(
+      `${API_URL}/k8s/pod-metrics?deployment=${encodeURIComponent(deployment)}`,
+    )
+    const data = (await res.json()) as any
     return (data.metrics || []) as PodMetric[]
   } catch {
     return []
@@ -512,11 +801,32 @@ export async function getCreatureMetrics(deployment: string): Promise<PodMetric[
 /** Delete a single pod so the ReplicaSet respawns it (restart). */
 export async function restartPod(podName: string): Promise<boolean> {
   try {
-    const res = await fetch(`${API_URL}/k8s/pods/${encodeURIComponent(podName)}`, {
-      method: 'DELETE',
-    })
+    const res = await fetch(
+      `${API_URL}/k8s/pods/${encodeURIComponent(podName)}`,
+      {
+        method: "DELETE",
+      },
+    )
     return res.ok
   } catch {
     return false
+  }
+}
+
+/**
+ * Ping the worker to reset the TTL for this deployment.
+ * Called periodically while the user is actively viewing their pod cluster,
+ * so the cleanup cron does not cull a deployment that is still being watched.
+ * Errors are swallowed — a missed heartbeat is not fatal.
+ */
+export async function heartbeat(deploymentName: string): Promise<void> {
+  try {
+    await fetch(`${API_URL}/k8s/heartbeat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ deploymentName }),
+    })
+  } catch {
+    // silent — a missed beat is non-fatal
   }
 }

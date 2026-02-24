@@ -1,14 +1,16 @@
-import { useState, useCallback, useEffect } from 'react'
-import type { AppState, CreatureData, DeployConfig } from './types'
-import { teardownCreature } from './api'
-import LandingPage from './components/LandingPage'
-import Pipeline from './components/Pipeline'
-import PodCluster from './components/PodCluster'
-import CVPage from './components/CVPage'
+import { useState, useCallback, useEffect } from "react"
+import type { AppState, CreatureData, DeployConfig } from "./types"
+import { teardownCreature } from "./api"
+import LandingPage from "./components/LandingPage"
+import Pipeline from "./components/Pipeline"
+import PodCluster from "./components/PodCluster"
+import CVPage from "./components/CVPage"
+import InfraPage from "./components/InfraPage"
+import NotFoundPage from "./components/NotFoundPage"
 
 /* ── sessionStorage persistence ─────────────────── */
 
-const STORAGE_KEY = 'cv-deployment'
+const STORAGE_KEY = "cv-deployment"
 
 interface SavedDeployment {
   creature: CreatureData
@@ -20,7 +22,9 @@ function loadDeployment(): SavedDeployment | null {
     const raw = sessionStorage.getItem(STORAGE_KEY)
     if (!raw) return null
     return JSON.parse(raw)
-  } catch { return null }
+  } catch {
+    return null
+  }
 }
 
 function saveDeployment(creature: CreatureData, config: DeployConfig) {
@@ -35,26 +39,41 @@ function clearDeployment() {
 
 export default function App() {
   const saved = loadDeployment()
-  const [phase, setPhase] = useState<'idle' | 'config' | 'deploying' | 'deployed'>(
-    saved ? 'deployed' : 'idle'
+  const [phase, setPhase] = useState<
+    "idle" | "config" | "deploying" | "deployed"
+  >(saved ? "deployed" : "idle")
+  const [showCV, setShowCV] = useState(() => window.location.pathname === "/cv")
+  const [showInfra, setShowInfra] = useState(
+    () => window.location.pathname === "/infra",
   )
-  const [showCV, setShowCV] = useState(() => window.location.pathname === '/cv')
+  const [showNotFound, setShowNotFound] = useState(
+    () => !["/", "/cv", "/infra"].includes(window.location.pathname),
+  )
   const [config, setConfig] = useState<DeployConfig>(
-    saved?.config ?? { creatureName: '', replicas: 3, strategy: 'RollingUpdate' }
+    saved?.config ?? {
+      creatureName: "",
+      replicas: 3,
+      strategy: "RollingUpdate",
+    },
   )
-  const [creature, setCreature] = useState<CreatureData | null>(saved?.creature ?? null)
+  const [creature, setCreature] = useState<CreatureData | null>(
+    saved?.creature ?? null,
+  )
 
   // Sync showCV with browser history (back/forward/mouse buttons 4+5)
   useEffect(() => {
     function onPopState() {
-      setShowCV(window.location.pathname === '/cv')
+      const p = window.location.pathname
+      setShowCV(p === "/cv")
+      setShowInfra(p === "/infra")
+      setShowNotFound(!["/", "/cv", "/infra"].includes(p))
     }
-    window.addEventListener('popstate', onPopState)
-    return () => window.removeEventListener('popstate', onPopState)
+    window.addEventListener("popstate", onPopState)
+    return () => window.removeEventListener("popstate", onPopState)
   }, [])
 
   const handleViewCV = useCallback(() => {
-    history.pushState(null, '', '/cv')
+    history.pushState(null, "", "/cv")
     setShowCV(true)
   }, [])
 
@@ -62,27 +81,39 @@ export default function App() {
     history.back()
   }, [])
 
+  const handleViewInfra = useCallback(() => {
+    history.pushState(null, "", "/infra")
+    setShowInfra(true)
+  }, [])
+
+  const handleBackFromInfra = useCallback(() => {
+    history.back()
+  }, [])
+
   const handleLaunch = useCallback(() => {
     if (creature !== null) {
-      setPhase('deployed')
+      setPhase("deployed")
     } else {
-      setPhase('config')
+      setPhase("config")
     }
   }, [creature])
 
   const handleDeploy = useCallback((cfg: DeployConfig) => {
     setConfig(cfg)
-    setPhase('deploying')
+    setPhase("deploying")
   }, [])
 
-  const handleDeployComplete = useCallback((data: CreatureData) => {
-    setCreature(data)
-    setPhase('deployed')
-    saveDeployment(data, config)
-  }, [config])
+  const handleDeployComplete = useCallback(
+    (data: CreatureData) => {
+      setCreature(data)
+      setPhase("deployed")
+      saveDeployment(data, config)
+    },
+    [config],
+  )
 
   const handleReset = useCallback(() => {
-    setPhase('idle')
+    setPhase("idle")
     setCreature(null)
     clearDeployment()
   }, [])
@@ -94,8 +125,16 @@ export default function App() {
     }
     setCreature(null)
     clearDeployment()
-    setPhase('deploying')
+    setPhase("deploying")
   }, [creature])
+
+  if (showNotFound) {
+    return (
+      <div className="app">
+        <NotFoundPage onBack={() => { history.pushState(null, "", "/"); setShowNotFound(false) }} />
+      </div>
+    )
+  }
 
   if (showCV) {
     return (
@@ -105,30 +144,47 @@ export default function App() {
     )
   }
 
-  const expanded = phase !== 'idle'
+  if (showInfra) {
+    return (
+      <div className="app">
+        <InfraPage onBack={handleBackFromInfra} />
+      </div>
+    )
+  }
+
+  const expanded = phase !== "idle"
 
   return (
-    <div className={`app panorama ${expanded ? 'panorama-expanded' : ''}`}>
+    <div className={`app panorama ${expanded ? "panorama-expanded" : ""}`}>
       <section className="pano-landing">
-        <LandingPage 
-          onLaunch={handleLaunch} 
+        <LandingPage
+          onLaunch={handleLaunch}
           onViewCV={handleViewCV}
+          onViewInfra={handleViewInfra}
           hasDeployment={creature !== null}
         />
       </section>
 
       {expanded && (
         <section className="pano-deploy">
-          {phase === 'config' && (
-            <ConfigPanel onDeploy={handleDeploy} onClose={() => setPhase('idle')} />
+          {phase === "config" && (
+            <ConfigPanel
+              onDeploy={handleDeploy}
+              onClose={() => setPhase("idle")}
+            />
           )}
 
-          {phase === 'deploying' && (
+          {phase === "deploying" && (
             <Pipeline config={config} onComplete={handleDeployComplete} />
           )}
 
-          {phase === 'deployed' && creature && (
-            <PodCluster creature={creature} config={config} onReset={handleReset} onRelaunch={handleRelaunch} />
+          {phase === "deployed" && creature && (
+            <PodCluster
+              creature={creature}
+              config={config}
+              onReset={handleReset}
+              onRelaunch={handleRelaunch}
+            />
           )}
         </section>
       )}
@@ -138,24 +194,32 @@ export default function App() {
 
 /* ── inline config panel (small, not worth a file) ── */
 
-function ConfigPanel({ onDeploy, onClose }: { onDeploy: (c: DeployConfig) => void; onClose: () => void }) {
-  const [name, setName] = useState('')
+function ConfigPanel({
+  onDeploy,
+  onClose,
+}: {
+  onDeploy: (c: DeployConfig) => void
+  onClose: () => void
+}) {
+  const [name, setName] = useState("")
   const [replicas, setReplicas] = useState(3)
-  const [strategy, setStrategy] = useState<'RollingUpdate' | 'Recreate'>('RollingUpdate')
   const [debugSprites, setDebugSprites] = useState(false)
 
   return (
     <div className="config-panel">
-      <button className="config-close" onClick={onClose} title="Close">✕</button>
+      <button className="config-close" onClick={onClose} title="Close">
+        ✕
+      </button>
       <h2>Build your deployment</h2>
 
       <div className="config-field">
         <label>Creature / Object</label>
         <input
           type="text"
-          placeholder='a dragon? a happy cactus? a tiny robot?'
+          placeholder="a dragon? a happy cactus? a tiny robot?"
           value={name}
-          onChange={e => setName(e.target.value)}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => e.stopPropagation()}
           autoFocus
         />
       </div>
@@ -167,56 +231,38 @@ function ConfigPanel({ onDeploy, onClose }: { onDeploy: (c: DeployConfig) => voi
           min={1}
           max={6}
           value={replicas}
-          onChange={e => setReplicas(Number(e.target.value))}
+          onChange={(e) => setReplicas(Number(e.target.value))}
         />
         <div className="range-labels">
-          <span>1</span><span>6</span>
+          <span>1</span>
+          <span>6</span>
         </div>
       </div>
 
-      <div className="config-field">
-        <label>Strategy</label>
-        <div className="strategy-options">
-          <label>
-            <input
-              type="radio"
-              name="strategy"
-              value="RollingUpdate"
-              checked={strategy === 'RollingUpdate'}
-              onChange={() => setStrategy('RollingUpdate')}
-            />
-            RollingUpdate
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="strategy"
-              value="Recreate"
-              checked={strategy === 'Recreate'}
-              onChange={() => setStrategy('Recreate')}
-            />
-            Recreate
-          </label>
-        </div>
-      </div>
-
-      <label className="config-debug">
-        <input
-          type="checkbox"
-          checked={debugSprites}
-          onChange={e => setDebugSprites(e.target.checked)}
-        />
-        Save debug image to repo
-      </label>
+      {import.meta.env.DEV && (
+        <label className="config-debug">
+          <input
+            type="checkbox"
+            checked={debugSprites}
+            onChange={(e) => setDebugSprites(e.target.checked)}
+          />
+          Save debug image to repo
+        </label>
+      )}
 
       <button
         className="btn-deploy"
         disabled={!name.trim()}
-        onClick={() => onDeploy({ creatureName: name.trim(), replicas, strategy, debugSprites })}
-      >
-Deploy
+        onClick={() =>
+          onDeploy({
+            creatureName: name.trim(),
+            replicas,
+            strategy: "RollingUpdate",
+            debugSprites,
+          })
+        }>
+        Deploy
       </button>
     </div>
   )
 }
-

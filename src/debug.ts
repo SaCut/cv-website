@@ -7,7 +7,7 @@
 
 function timestamp(): string {
   const d = new Date()
-  const pad = (n: number) => String(n).padStart(2, '0')
+  const pad = (n: number) => String(n).padStart(2, "0")
   return (
     `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
     `_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`
@@ -15,7 +15,7 @@ function timestamp(): string {
 }
 
 function safeName(name: string): string {
-  return name.replace(/[^a-z0-9_-]/gi, '_').slice(0, 40)
+  return name.replace(/[^a-z0-9_-]/gi, "_").slice(0, 40)
 }
 
 /**
@@ -37,13 +37,18 @@ export async function logSpriteResponse(
   // Strip imageBase64 from the JSON — it's already saved as the .png.
   const { imageBase64: _omit, ...meta } = rawResponse as Record<string, unknown>
   try {
-    await fetch('/debug-log', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ timestamp: ts, name, imageBase64, rawResponse: meta }),
+    await fetch("/debug-log", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        timestamp: ts,
+        name,
+        imageBase64,
+        rawResponse: meta,
+      }),
     })
     console.info(`[debug] Saved debug-sprites/${ts}_${name}.{png,json}`)
   } catch (e) {
-    console.warn('[debug] Log failed (expected in prod):', e)
+    console.warn("[debug] Log failed (expected in prod):", e)
   }
 }
