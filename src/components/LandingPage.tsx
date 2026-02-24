@@ -1,10 +1,11 @@
 interface Props {
   onLaunch: () => void
   onViewCV: () => void
+  onViewInfra: () => void
   hasDeployment: boolean
 }
 
-export default function LandingPage({ onLaunch, onViewCV, hasDeployment }: Props) {
+export default function LandingPage({ onLaunch, onViewCV, onViewInfra, hasDeployment }: Props) {
   return (
     <div className="landing">
       <div className="landing-emoji">🚀</div>
@@ -27,8 +28,13 @@ export default function LandingPage({ onLaunch, onViewCV, hasDeployment }: Props
         <button className="btn-launch" onClick={onLaunch}>
           {hasDeployment ? '👀 View Deployment' : '🚀 Launch Pods'}
         </button>
+      </div>
+      <div className="landing-cta-row">
+        <button className="btn-cv" onClick={onViewInfra}>
+          🗺️ Current Architecture
+        </button>
         <button className="btn-cv" onClick={onViewCV}>
-          📄 View CV
+          📄 My CV
         </button>
       </div>
       <div className="landing-links">

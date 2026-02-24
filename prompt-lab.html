@@ -1,0 +1,721 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>FLUX Prompt Lab</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: "Menlo", "Consolas", monospace;
+        background: #0d1117;
+        color: #c9d1d9;
+        padding: 2rem;
+        max-width: 900px;
+        margin: 0 auto;
+      }
+      h1 {
+        color: #58a6ff;
+        margin-bottom: 1.5rem;
+        font-size: 1.3rem;
+      }
+      label {
+        display: block;
+        margin-bottom: 0.3rem;
+        color: #8b949e;
+        font-size: 0.85rem;
+      }
+      textarea,
+      input[type="text"] {
+        width: 100%;
+        background: #161b22;
+        border: 1px solid #30363d;
+        color: #c9d1d9;
+        border-radius: 6px;
+        padding: 0.6rem;
+        font-family: inherit;
+        font-size: 0.85rem;
+        resize: vertical;
+      }
+      textarea:focus,
+      input:focus {
+        outline: none;
+        border-color: #58a6ff;
+      }
+      textarea {
+        min-height: 4rem;
+      }
+      .field {
+        margin-bottom: 1rem;
+      }
+      .row {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+      .row .field {
+        flex: 1;
+        min-width: 100px;
+      }
+      .slider-row {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+      }
+      .slider-row input[type="range"] {
+        flex: 1;
+        accent-color: #58a6ff;
+      }
+      .slider-val {
+        min-width: 3ch;
+        text-align: right;
+        color: #58a6ff;
+        font-weight: bold;
+      }
+      button {
+        background: #238636;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 0.7rem 1.5rem;
+        font-family: inherit;
+        font-size: 0.9rem;
+        cursor: pointer;
+        margin-top: 0.5rem;
+      }
+      button:hover {
+        background: #2ea043;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .output {
+        margin-top: 1.5rem;
+        text-align: center;
+      }
+      .output img {
+        max-width: 512px;
+        width: 100%;
+        border: 1px solid #30363d;
+        border-radius: 6px;
+        image-rendering: pixelated;
+      }
+      .status {
+        margin-top: 0.8rem;
+        font-size: 0.8rem;
+        color: #8b949e;
+      }
+      .status.error {
+        color: #f85149;
+      }
+      .history {
+        margin-top: 2rem;
+        border-top: 1px solid #21262d;
+        padding-top: 1rem;
+      }
+      .history h2 {
+        font-size: 1rem;
+        color: #8b949e;
+        margin-bottom: 0.8rem;
+      }
+      .history-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 0.8rem;
+      }
+      .history-item {
+        background: #161b22;
+        border: 1px solid #30363d;
+        border-radius: 6px;
+        overflow: hidden;
+        cursor: pointer;
+      }
+      .history-item:hover {
+        border-color: #58a6ff;
+      }
+      .history-item img {
+        width: 100%;
+        aspect-ratio: 1;
+        object-fit: contain;
+        image-rendering: pixelated;
+      }
+      .history-item .caption {
+        padding: 0.4rem 0.5rem;
+        font-size: 0.7rem;
+        color: #8b949e;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .px-section {
+        margin-top: 1.5rem;
+        border-top: 1px solid #21262d;
+        padding-top: 1rem;
+      }
+      .px-section h2 {
+        font-size: 1rem;
+        color: #8b949e;
+        margin-bottom: 0.8rem;
+      }
+      .size-btns {
+        display: flex;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+      }
+      .size-btn {
+        background: #161b22;
+        border: 1px solid #30363d;
+        color: #c9d1d9;
+        border-radius: 4px;
+        padding: 0.3rem 0.7rem;
+        font-family: inherit;
+        font-size: 0.8rem;
+        cursor: pointer;
+        margin-top: 0;
+      }
+      .size-btn:hover {
+        border-color: #58a6ff;
+        background: #1c2128;
+      }
+      .size-btn.active {
+        border-color: #58a6ff;
+        color: #58a6ff;
+        background: #1c2128;
+      }
+      .px-pair {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+      .px-col {
+        text-align: center;
+      }
+      .px-col > label {
+        display: block;
+        margin-bottom: 0.4rem;
+        font-size: 0.8rem;
+        color: #8b949e;
+      }
+      .px-col canvas {
+        image-rendering: pixelated;
+        max-width: 100%;
+        border: 1px solid #30363d;
+        border-radius: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>FLUX.1 schnell prompt lab</h1>
+
+    <div class="field">
+      <label>Prompt</label>
+      <textarea id="prompt">
+die-cut sticker of a sleeping tiger, pure white background, isolated subject, 16-bit SNES sprite style, bright vivid colours, saturated palette, flat shading, no scenery, no shadows</textarea
+      >
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>Steps (max 8)</label>
+        <div class="slider-row">
+          <input type="range" id="steps" min="1" max="8" value="4" />
+          <span class="slider-val" id="steps-val">4</span>
+        </div>
+      </div>
+    </div>
+
+    <button id="generate">Generate</button>
+
+    <div class="output">
+      <img id="result" alt="" style="display: none" />
+      <div class="status" id="status"></div>
+    </div>
+
+    <div id="pixelize-section" class="px-section" style="display: none">
+      <h2>Pixelization — edge-preserving</h2>
+      <div class="row" style="align-items: flex-end">
+        <div class="field">
+          <label>Grid size</label>
+          <div class="size-btns">
+            <button class="size-btn" data-size="32">32</button>
+            <button class="size-btn" data-size="48">48</button>
+            <button class="size-btn active" data-size="56">56</button>
+            <button class="size-btn" data-size="64">64</button>
+            <button class="size-btn" data-size="78">78</button>
+          </div>
+        </div>
+        <div class="field" style="display: flex; align-items: flex-end">
+          <button id="pixelate-btn">Pixelate</button>
+        </div>
+      </div>
+      <div class="px-pair">
+        <div class="px-col">
+          <label>White background removed</label>
+          <canvas id="px-canvas-bg"></canvas>
+        </div>
+        <div class="px-col">
+          <label>No background removal</label>
+          <canvas id="px-canvas-nobg"></canvas>
+        </div>
+      </div>
+      <div
+        class="status"
+        id="px-status"
+        style="text-align: center; margin-top: 0.5rem"></div>
+    </div>
+
+    <div class="history" id="history-section" style="display: none">
+      <h2>History</h2>
+      <div class="history-grid" id="history-grid"></div>
+    </div>
+
+    <script>
+      const API = "https://pipeline-cv-worker.xartab-mail-flare.workers.dev"
+      const history = []
+
+      // Slider sync
+      const stepsEl = document.getElementById("steps")
+      stepsEl.addEventListener("input", () => {
+        document.getElementById("steps-val").textContent = stepsEl.value
+      })
+
+      const btn = document.getElementById("generate")
+      const status = document.getElementById("status")
+      const resultImg = document.getElementById("result")
+
+      btn.addEventListener("click", async () => {
+        btn.disabled = true
+        status.className = "status"
+        status.textContent = "Generating..."
+        resultImg.style.display = "none"
+
+        const payload = {
+          model: "flux-schnell",
+          prompt: document.getElementById("prompt").value,
+          num_steps: Number(stepsEl.value),
+        }
+
+        const t0 = performance.now()
+        try {
+          const res = await fetch(API + "/raw-image", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          })
+          const data = await res.json()
+          const elapsed = ((performance.now() - t0) / 1000).toFixed(1)
+
+          if (data.error) {
+            status.className = "status error"
+            status.textContent = data.error
+          } else {
+            resultImg.src = data.imageBase64
+            resultImg.style.display = "block"
+            status.textContent = `${elapsed}s | ${payload.num_steps} steps`
+            document.getElementById("pixelize-section").style.display = "block"
+            addToHistory(data.imageBase64, payload)
+          }
+        } catch (err) {
+          status.className = "status error"
+          status.textContent = err.message
+        }
+        btn.disabled = false
+      })
+
+      function addToHistory(src, params) {
+        history.unshift({ src, params })
+        const section = document.getElementById("history-section")
+        const grid = document.getElementById("history-grid")
+        section.style.display = "block"
+
+        const item = document.createElement("div")
+        item.className = "history-item"
+        item.innerHTML = `<img src="${src}" /><div class="caption">${params.prompt.slice(0, 60)}</div>`
+        item.addEventListener("click", () => {
+          document.getElementById("prompt").value = params.prompt
+          stepsEl.value = params.num_steps
+          document.getElementById("steps-val").textContent = params.num_steps
+          resultImg.src = src
+          resultImg.style.display = "block"
+          window.scrollTo({ top: 0, behavior: "smooth" })
+        })
+        grid.prepend(item)
+      }
+
+      // ---- Pixelization ----
+
+      let pxGridSize = 56
+
+      document.querySelectorAll(".size-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document
+            .querySelectorAll(".size-btn")
+            .forEach((b) => b.classList.remove("active"))
+          btn.classList.add("active")
+          pxGridSize = Number(btn.dataset.size)
+        })
+      })
+
+      // Bilateral filter — used only for bg mask detection at small scale.
+      function bilateralFilter(src, w, h, sigmaSpace, sigmaColor) {
+        const out = new Uint8ClampedArray(src.length)
+        const radius = Math.ceil(sigmaSpace * 2)
+        const twoSS = 2 * sigmaSpace * sigmaSpace
+        const twoSC = 2 * sigmaColor * sigmaColor
+
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            const ci = (y * w + x) * 4
+            let wSum = 0,
+              rSum = 0,
+              gSum = 0,
+              bSum = 0
+
+            for (let dy = -radius; dy <= radius; dy++) {
+              for (let dx = -radius; dx <= radius; dx++) {
+                const nx = x + dx,
+                  ny = y + dy
+                if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue
+                const ni = (ny * w + nx) * 4
+                const sw = Math.exp(-(dx * dx + dy * dy) / twoSS)
+                const dr = src[ci] - src[ni],
+                  dg = src[ci + 1] - src[ni + 1],
+                  db = src[ci + 2] - src[ni + 2]
+                const wt = sw * Math.exp(-(dr * dr + dg * dg + db * db) / twoSC)
+                rSum += src[ni] * wt
+                gSum += src[ni + 1] * wt
+                bSum += src[ni + 2] * wt
+                wSum += wt
+              }
+            }
+
+            out[ci] = rSum / wSum
+            out[ci + 1] = gSum / wSum
+            out[ci + 2] = bSum / wSum
+            out[ci + 3] = src[ci + 3]
+          }
+        }
+
+        return out
+      }
+
+      function buildBgMask(data, size, tolerance) {
+        const corners = [
+          0,
+          (size - 1) * 4,
+          size * (size - 1) * 4,
+          (size * size - 1) * 4,
+        ]
+        const bgR = Math.round(corners.reduce((s, i) => s + data[i], 0) / 4)
+        const bgG = Math.round(corners.reduce((s, i) => s + data[i + 1], 0) / 4)
+        const bgB = Math.round(corners.reduce((s, i) => s + data[i + 2], 0) / 4)
+        // Every candidate pixel is compared against the global bg colour, not its
+        // parent. Parent-comparison drifts through gradient regions (e.g. white egg
+        // on white bg) because the error compounds step by step.
+        const isBg = (idx) =>
+          Math.abs(data[idx] - bgR) +
+            Math.abs(data[idx + 1] - bgG) +
+            Math.abs(data[idx + 2] - bgB) <
+          tolerance * 3
+
+        const mask = new Uint8Array(size * size)
+        const q = []
+
+        for (let x = 0; x < size; x++) {
+          for (const y of [0, size - 1]) {
+            const p = y * size + x
+            if (isBg(p * 4) && !mask[p]) {
+              mask[p] = 1
+              q.push(p)
+            }
+          }
+        }
+        for (let y = 1; y < size - 1; y++) {
+          for (const x of [0, size - 1]) {
+            const p = y * size + x
+            if (isBg(p * 4) && !mask[p]) {
+              mask[p] = 1
+              q.push(p)
+            }
+          }
+        }
+
+        let qi = 0
+        while (qi < q.length) {
+          const p = q[qi++]
+          const px = p % size,
+            py = Math.floor(p / size)
+          for (const [dx, dy] of [
+            [-1, 0],
+            [1, 0],
+            [0, -1],
+            [0, 1],
+          ]) {
+            const nx = px + dx,
+              ny = py + dy
+            if (nx < 0 || nx >= size || ny < 0 || ny >= size) continue
+            const np = ny * size + nx
+            if (!mask[np] && isBg(np * 4)) {
+              mask[np] = 1
+              q.push(np)
+            }
+          }
+        }
+
+        // erode 1 pass
+        const toErase = []
+        for (let y = 0; y < size; y++) {
+          for (let x = 0; x < size; x++) {
+            const p = y * size + x
+            if (mask[p]) continue
+            for (const [dx, dy] of [
+              [-1, 0],
+              [1, 0],
+              [0, -1],
+              [0, 1],
+            ]) {
+              const nx = x + dx,
+                ny = y + dy
+              if (
+                nx < 0 ||
+                nx >= size ||
+                ny < 0 ||
+                ny >= size ||
+                mask[ny * size + nx]
+              ) {
+                toErase.push(p)
+                break
+              }
+            }
+          }
+        }
+        for (const p of toErase) mask[p] = 1
+
+        return mask
+      }
+
+      // Unsharp mask over pixel buffer — sharpens edges before downsampling.
+      // amount=1.5 gives strong sharpening without haloing.
+      function unsharpMask(data, w, h, amount) {
+        // 3x3 box blur
+        const blur = new Uint8ClampedArray(data.length)
+
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            let rS = 0,
+              gS = 0,
+              bS = 0,
+              cnt = 0
+            for (let dy = -1; dy <= 1; dy++) {
+              for (let dx = -1; dx <= 1; dx++) {
+                const nx = x + dx,
+                  ny = y + dy
+                if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue
+                const ni = (ny * w + nx) * 4
+                rS += data[ni]
+                gS += data[ni + 1]
+                bS += data[ni + 2]
+                cnt++
+              }
+            }
+            const ci = (y * w + x) * 4
+            blur[ci] = rS / cnt
+            blur[ci + 1] = gS / cnt
+            blur[ci + 2] = bS / cnt
+            blur[ci + 3] = data[ci + 3]
+          }
+        }
+
+        const out = new Uint8ClampedArray(data.length)
+        for (let i = 0; i < data.length; i += 4) {
+          out[i] = Math.min(
+            255,
+            Math.max(0, data[i] + amount * (data[i] - blur[i])),
+          )
+          out[i + 1] = Math.min(
+            255,
+            Math.max(0, data[i + 1] + amount * (data[i + 1] - blur[i + 1])),
+          )
+          out[i + 2] = Math.min(
+            255,
+            Math.max(0, data[i + 2] + amount * (data[i + 2] - blur[i + 2])),
+          )
+          out[i + 3] = data[i + 3]
+        }
+
+        return out
+      }
+
+      // Edge-preserving pixelation:
+      //   1. Draw at native resolution, bilateral + flood fill → per-pixel bg mask
+      //   2. Sharpen native image
+      //   3. Sample each grid cell using only foreground pixels (bg mask applied
+      //      per source pixel before any downscaling); cell is null if no fg pixels found
+      function pixelateEdgePreserving(imgSrc, gridSize, removeBg) {
+        return new Promise((resolve) => {
+          const img = new Image()
+
+          img.onload = () => {
+            const nativeSize = Math.max(img.naturalWidth || 512, 512)
+            const nc = document.createElement("canvas")
+            nc.width = nativeSize
+            nc.height = nativeSize
+            const ncx = nc.getContext("2d")
+            ncx.imageSmoothingEnabled = false
+            const nCrop = nativeSize * 0.07
+            ncx.drawImage(
+              img,
+              -nCrop,
+              -nCrop,
+              nativeSize + nCrop * 2,
+              nativeSize + nCrop * 2,
+            )
+            const raw = ncx.getImageData(0, 0, nativeSize, nativeSize)
+
+            // per-pixel bg mask at native resolution
+            let nativeMask
+            if (removeBg) {
+              nativeMask = buildBgMask(raw.data, nativeSize, 15)
+            } else {
+              nativeMask = new Uint8Array(nativeSize * nativeSize) // all foreground
+            }
+
+            // sharpen native image for colour sampling
+            const nd = unsharpMask(raw.data, nativeSize, nativeSize, 1.5)
+
+            const blockSize = nativeSize / gridSize
+            // skip outer 30% of each block to avoid straddling edges
+            const inner = 0.3
+            // ~9 quantization levels per channel
+            const step = 32
+
+            const grid = []
+
+            for (let gy = 0; gy < gridSize; gy++) {
+              const row = []
+
+              for (let gx = 0; gx < gridSize; gx++) {
+                const x0 = Math.floor((gx + inner) * blockSize)
+                const x1 = Math.ceil((gx + 1 - inner) * blockSize)
+                const y0 = Math.floor((gy + inner) * blockSize)
+                const y1 = Math.ceil((gy + 1 - inner) * blockSize)
+
+                const freq = new Map()
+                for (let sy = y0; sy < y1; sy++) {
+                  for (let sx = x0; sx < x1; sx++) {
+                    if (
+                      sx < 0 ||
+                      sx >= nativeSize ||
+                      sy < 0 ||
+                      sy >= nativeSize
+                    )
+                      continue
+                    // skip bg pixels — removal applied on the original image
+                    if (nativeMask[sy * nativeSize + sx]) continue
+                    const si = (sy * nativeSize + sx) * 4
+                    if (nd[si + 3] < 128) continue
+                    const qr = Math.min(Math.round(nd[si] / step) * step, 252)
+                    const qg = Math.min(
+                      Math.round(nd[si + 1] / step) * step,
+                      252,
+                    )
+                    const qb = Math.min(
+                      Math.round(nd[si + 2] / step) * step,
+                      252,
+                    )
+                    const h =
+                      "#" +
+                      qr.toString(16).padStart(2, "0") +
+                      qg.toString(16).padStart(2, "0") +
+                      qb.toString(16).padStart(2, "0")
+                    freq.set(h, (freq.get(h) || 0) + 1)
+                  }
+                }
+
+                // cell has no foreground pixels → transparent
+                if (freq.size === 0) {
+                  row.push(null)
+                  continue
+                }
+                let best = "",
+                  bestCnt = 0
+                for (const [h, cnt] of freq)
+                  if (cnt > bestCnt) {
+                    best = h
+                    bestCnt = cnt
+                  }
+                row.push(best)
+              }
+
+              grid.push(row)
+            }
+
+            resolve(grid)
+          }
+
+          img.onerror = () => resolve(null)
+          img.src = imgSrc
+        })
+      }
+
+      function renderGrid(canvas, grid) {
+        if (!grid) return
+        const size = grid.length
+        const cellPx = Math.max(4, Math.floor(320 / size))
+        canvas.width = size * cellPx
+        canvas.height = size * cellPx
+        canvas.style.display = "block"
+        const ctx = canvas.getContext("2d")
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+        for (let y = 0; y < size; y++) {
+          for (let x = 0; x < size; x++) {
+            const colour = grid[y][x]
+            if (!colour) continue
+            ctx.fillStyle = colour
+            ctx.fillRect(x * cellPx, y * cellPx, cellPx, cellPx)
+          }
+        }
+      }
+
+      document
+        .getElementById("pixelate-btn")
+        .addEventListener("click", async () => {
+          const src = resultImg.src
+          if (!src || resultImg.style.display === "none") return
+
+          const pxBtn = document.getElementById("pixelate-btn")
+          const pxStatus = document.getElementById("px-status")
+          pxBtn.disabled = true
+          pxStatus.className = "status"
+          pxStatus.textContent = `Processing ${pxGridSize}x${pxGridSize}...`
+
+          const t0 = performance.now()
+          const [gridBg, gridNobg] = await Promise.all([
+            pixelateEdgePreserving(src, pxGridSize, true),
+            pixelateEdgePreserving(src, pxGridSize, false),
+          ])
+          const elapsed = ((performance.now() - t0) / 1000).toFixed(2)
+
+          renderGrid(document.getElementById("px-canvas-bg"), gridBg)
+          renderGrid(document.getElementById("px-canvas-nobg"), gridNobg)
+          pxStatus.textContent = `${pxGridSize}x${pxGridSize} | ${elapsed}s`
+
+          pxBtn.disabled = false
+        })
+
+      // Ctrl+Enter to generate
+      document.addEventListener("keydown", (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+          e.preventDefault()
+          btn.click()
+        }
+      })
+    </script>
+  </body>
+</html>

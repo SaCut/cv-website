@@ -287,6 +287,97 @@ async function callLLM(
   return null
 }
 
+const BG_OPS_PROMPT = `You are a background-removal planner for pixel art sprites. Given a generated sticker image, you must FIRST decide whether the output is an isolated subject, then plan its background removal.
+
+Step 1 — Quality gate:
+If the image shows a tiled pattern, a busy scene, or multiple repeated subjects instead of ONE centred isolated subject, output: {"retry":true}
+This tells the pipeline to regenerate with a stronger prompt. Do NOT try to plan bg removal for a bad image.
+
+Step 2 — If the image IS a single isolated subject, output an ordered list of atomic mask operations to separate subject from background.
+
+Every operation writes to a single binary mask (0 = keep, 1 = remove).
+
+Primitives:
+  {"op":"flood_fill","seeds":"edges","tolerance":N}
+    BFS from every border pixel. Marks connected pixels within N Manhattan distance (per-channel sum) of the averaged border colour as 1. N range: 30-100.
+  {"op":"flood_fill","seeds":"centre","tolerance":N}
+    BFS from a central patch. Marks connected pixels NOT matching background as 1. N range: 30-80.
+  {"op":"threshold","channel":"r"|"g"|"b"|"luminance","compare":">"|"<","value":N}
+    Scan every pixel. "luminance" = (R+G+B)/3. Marks pixels where channel compare value is true as 1. Value 0-255.
+  {"op":"invert"}
+    Flips every mask bit (0 becomes 1, 1 becomes 0). Use after centre flood to turn a foreground mask into a background mask.
+  {"op":"erode","passes":N}
+    Strips N pixel layers from foreground border (marks them as 1). Removes sticker outline rings. N: 1-3.
+  {"op":"dilate","passes":N}
+    Grows foreground by N pixels into background (marks those as 0). N: 1-3.
+
+Compose freely. Ops execute in order on the same mask.
+
+Common patterns:
+- White bg only: flood_fill(edges,60) + erode(1)
+- White outer bg + dark internal bg (sticker circle): flood_fill(edges,60) + threshold(luminance,<,35) + erode(1)
+- Coloured bg: flood_fill(edges,80) + erode(1)
+
+Output ONLY valid JSON: {"retry":true} or {"ops":[...]}`
+
+/**
+ * Show the generated image to a vision model.
+ * Returns {retry:true} if the image is a scene/tiled, or {ops:[...]} with atomic removal steps.
+ */
+async function planBgRemoval(
+  imageDataUrl: string,
+  token: string,
+): Promise<{ parsed: any } | null> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), MODEL_TIMEOUT_MS)
+
+  try {
+    const res = await fetch(`${API_BASE}/chat/completions`, {
+      method: "POST",
+      signal: controller.signal,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+      body: JSON.stringify({
+        messages: [
+          { role: "system", content: BG_OPS_PROMPT },
+          {
+            role: "user",
+            content: [
+              {
+                type: "image_url",
+                image_url: { url: imageDataUrl, detail: "low" },
+              },
+              {
+                type: "text",
+                text: "Select background removal operations for this sticker.",
+              },
+            ],
+          },
+        ],
+        model: "gpt-4o-mini",
+        temperature: 0.2,
+        max_tokens: 200,
+      }),
+    })
+    clearTimeout(timer)
+
+    if (!res.ok) return null
+    const data = (await res.json()) as any
+    const content: string = data.choices?.[0]?.message?.content || ""
+    const match = content.match(/\{[\s\S]*\}/)
+    if (!match) return null
+
+    return { parsed: JSON.parse(match[0]) }
+  } catch {
+    clearTimeout(timer)
+    return null
+  }
+}
+
 /* ═══════════════════════════════════════════════════════
    SHAPE RASTERISATION
    ═══════════════════════════════════════════════════════ */
@@ -528,55 +619,79 @@ export default {
           )
         }
 
-        // ── 1️⃣  Try CF Workers AI image generation first ──
+        // ── 1  Try CF Workers AI image generation (with one retry on scene output) ──
         if (env.AI) {
-          try {
-            console.log(`CF AI image gen for "${prompt}"...`)
-            const aiResponse = await env.AI.run("@cf/bytedance/stable-diffusion-xl-lightning", {
-              prompt: `pixel art sprite, ${prompt}, single subject, centered on pure white background, white background, isolated, no border, no frame, retro 16-bit game art style, chunky pixels, limited colour palette, clear silhouette, flat lighting, no scenery`,
-              negative_prompt:
-                "realistic, photograph, 3d render, smooth gradients, blurry, nsfw, deformed, text, watermark, frame, border, vignette, dark edges, dark border, gradient background, grey background, shadow, anti-aliasing, scene, landscape, environment, terrain, sky, clouds, ground, platform, tilemap, multiple characters",
-              num_inference_steps: 4,
-              width: 512,
-              height: 512,
-            })
+          let lastImageBase64 = ""
+          const MAX_ATTEMPTS = 2
 
-            // aiResponse is a ReadableStream<Uint8Array>
-            const imageBuffer = await new Response(aiResponse).arrayBuffer()
-            const bytes = new Uint8Array(imageBuffer)
-
-            // Chunk binary→base64 to avoid call-stack overflow on large arrays
-            let binary = ""
-            const chunkSize = 8192
-            for (let i = 0; i < bytes.length; i += chunkSize) {
-              binary += String.fromCharCode(
-                ...bytes.subarray(i, Math.min(i + chunkSize, bytes.length)),
+          for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+            try {
+              const extraPrompt =
+                attempt > 0
+                  ? "single centered subject, no tiling, no repeating pattern, "
+                  : ""
+              console.log(
+                `CF AI image gen for "${prompt}" (attempt ${attempt + 1})...`,
               )
+
+              const aiResponse = await env.AI.run(
+                "@cf/black-forest-labs/flux-1-schnell",
+                {
+                  prompt: `die-cut sticker of ${prompt}, ${extraPrompt}thin black outline, pure white background, isolated subject, 16-bit SNES sprite style, bright vivid colours, saturated palette, flat shading, no scenery, no shadows`,
+                  steps: 4,
+                },
+              )
+
+              lastImageBase64 = `data:image/jpeg;base64,${aiResponse.image}`
+
+              // Vision model: quality gate + bg-ops plan (parallel with colour hint).
+              const [colorHint, bgPlan] = await Promise.all([
+                callLLM(
+                  `You are a colour expert. Given a subject name, output its most iconic single colour as a hex code. Output ONLY this JSON: {"primaryColour":"#hex"}`,
+                  `Subject: ${prompt}`,
+                  env.GITHUB_TOKEN,
+                  undefined,
+                  64,
+                ),
+                planBgRemoval(lastImageBase64, env.GITHUB_TOKEN),
+              ])
+
+              // If the vision model says "retry" and we haven't exhausted attempts, loop.
+              if (
+                bgPlan?.parsed?.retry === true &&
+                attempt < MAX_ATTEMPTS - 1
+              ) {
+                console.log(
+                  `Vision model requested retry for "${prompt}" — regenerating.`,
+                )
+                continue
+              }
+
+              const primaryColour =
+                colorHint?.parsed?.primaryColour || "#00d4ff"
+              const bgOps = Array.isArray(bgPlan?.parsed?.ops)
+                ? bgPlan!.parsed.ops
+                : undefined
+
+              console.log(
+                `CF AI image gen succeeded for "${prompt}" (attempt ${attempt + 1})${bgOps ? `, bgOps: ${JSON.stringify(bgOps)}` : ", bgOps: fallback"}`,
+              )
+
+              return Response.json(
+                {
+                  imageBase64: lastImageBase64,
+                  primaryColour,
+                  bgOps,
+                  source: "cf-ai",
+                },
+                { headers: { ...CORS, "Content-Type": "application/json" } },
+              )
+            } catch (cfErr: any) {
+              console.warn(
+                `CF AI image gen failed for "${prompt}": ${cfErr?.message || cfErr}. Falling back to LLM pipeline.`,
+              )
+              break // fall through to Q1-Q3
             }
-            const imageBase64 = `data:image/png;base64,${btoa(binary)}`
-
-            // Quick colour hint via mini model (for card glow effect)
-            const colorHint = await callLLM(
-              `You are a colour expert. Given a subject name, output its most iconic single colour as a hex code. Output ONLY this JSON: {"primaryColour":"#hex"}`,
-              `Subject: ${prompt}`,
-              env.GITHUB_TOKEN,
-              undefined,
-              64,
-            )
-            const primaryColour = colorHint?.parsed?.primaryColour || "#00d4ff"
-
-            console.log(
-              `CF AI image gen succeeded for "${prompt}" (${bytes.length} bytes)`,
-            )
-            return Response.json(
-              { imageBase64, primaryColour, source: "cf-ai" },
-              { headers: { ...CORS, "Content-Type": "application/json" } },
-            )
-          } catch (cfErr: any) {
-            console.warn(
-              `CF AI image gen failed for "${prompt}": ${cfErr?.message || cfErr}. Falling back to LLM pipeline.`,
-            )
-            // Fall through to Q1→Q2→Q3→rasterise pipeline below
           }
         }
 
@@ -687,6 +802,41 @@ export default {
         console.error("Sprite generation error:", err)
         return Response.json(
           { error: "Internal error", fallback: true },
+          { status: 500, headers: CORS },
+        )
+      }
+    }
+
+    // ── Endpoint 1b: Raw image gen playground ──
+    if (request.method === "POST" && url.pathname === "/raw-image") {
+      try {
+        const body = (await request.json()) as Record<string, any>
+        if (!body.prompt || typeof body.prompt !== "string") {
+          return Response.json(
+            { error: "Bad prompt" },
+            { status: 400, headers: CORS },
+          )
+        }
+        if (!env.AI) {
+          return Response.json(
+            { error: "AI binding unavailable" },
+            { status: 503, headers: CORS },
+          )
+        }
+
+        const res = await env.AI.run("@cf/black-forest-labs/flux-1-schnell", {
+          prompt: body.prompt,
+          steps: Math.min(Math.max(Number(body.num_steps) || 4, 1), 8),
+        })
+        const imageBase64 = `data:image/jpeg;base64,${res.image}`
+
+        return Response.json(
+          { imageBase64 },
+          { headers: { ...CORS, "Content-Type": "application/json" } },
+        )
+      } catch (err: any) {
+        return Response.json(
+          { error: err?.message || "Image generation failed" },
           { status: 500, headers: CORS },
         )
       }
@@ -867,6 +1017,37 @@ export default {
       return handlePodRestart(podName, env)
     }
 
+    // -- Endpoint 8: Heartbeat — resets the TTL for a deployment --
+    if (request.method === "POST" && url.pathname === "/k8s/heartbeat") {
+      try {
+        const body = (await request.json()) as any
+        const name = sanitizeName(String(body.deploymentName || ""))
+        if (!name)
+          return Response.json(
+            { error: "Missing deploymentName" },
+            { status: 400, headers: CORS },
+          )
+        const nowSec = Math.floor(Date.now() / 1000).toString()
+        await k8sFetch(
+          env,
+          `/apis/apps/v1/namespaces/${CREATURES_NS}/deployments/${name}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/merge-patch+json" },
+            body: JSON.stringify({
+              metadata: { annotations: { "last-seen-at": nowSec } },
+            }),
+          },
+        )
+        return Response.json({ ok: true, lastSeen: nowSec }, { headers: CORS })
+      } catch (e) {
+        return Response.json(
+          { error: String(e) },
+          { status: 500, headers: CORS },
+        )
+      }
+    }
+
     return new Response("Not found", { status: 404, headers: CORS })
   },
 
@@ -932,8 +1113,11 @@ async function cleanupOldDeployments(env: Env): Promise<void> {
   const now = Date.now()
 
   for (const dep of data.items || []) {
-    const created = dep.metadata?.labels?.["created-at"]
-    if (created && now - Number(created) * 1000 > POD_TTL_SECONDS * 1000) {
+    // Prefer last-seen-at (heartbeat) over created-at so active viewers don't get culled
+    const lastSeen =
+      dep.metadata?.annotations?.["last-seen-at"] ||
+      dep.metadata?.labels?.["created-at"]
+    if (lastSeen && now - Number(lastSeen) * 1000 > POD_TTL_SECONDS * 1000) {
       await k8sFetch(
         env,
         `/apis/apps/v1/namespaces/${CREATURES_NS}/deployments/${dep.metadata.name}`,

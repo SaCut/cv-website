@@ -18,40 +18,43 @@ const STAGES = [
 function makeLogs(stageId: string, config: DeployConfig): string[] {
   const n = config.creatureName
   const r = config.replicas
+  const slug = n.toLowerCase().replace(/\s+/g, '-')
   switch (stageId) {
     case 'source': return [
       `> git pull origin main`,
+      `> HEAD is now at ${Math.random().toString(16).slice(2, 9)}`,
       `> Resolving creature manifest for "${n}"...`,
       `> Dependencies locked ✓`,
     ]
     case 'build': return [
-      `> docker build -t creature-registry/${n.toLowerCase().replace(/\s+/g, '-')}:latest .`,
-      `> Step 1/4 : FROM pixel-base:alpine`,
-      `> Step 2/4 : COPY creature.json /app/`,
-      `> Step 3/4 : RUN generate-pixels --optimise`,
-      `> Step 4/4 : HEALTHCHECK --interval=30s`,
+      `> docker build -t creature-registry/${slug}:latest .`,
+      `> Step 1/5 : FROM pixel-base:alpine AS builder`,
+      `> Step 2/5 : RUN apk add --no-cache libpixel imagetools`,
+      `> Step 3/5 : COPY creature.json /app/`,
+      `> Step 4/5 : RUN pixelate --optimise --palette=256`,
+      `> Step 5/5 : HEALTHCHECK --interval=30s CMD wget -qO- /healthz`,
       `> Image built successfully ✓`,
     ]
     case 'test': return [
-      `> Running creature unit tests...`,
-      `> ✓ test_has_enough_pixels (2ms)`,
-      `> ✓ test_colours_are_valid (1ms)`,
-      `> ✓ test_creature_is_adorable (3ms)`,
+      `> Running test suite...`,
+      `> ✓ test_pixel_count_nonzero (2ms)`,
+      `> ✓ test_palette_within_bounds (1ms)`,
       `> ✓ test_no_frame_overflow (1ms)`,
-      `> All 4 tests passed ✓`,
+      `> ✓ test_image_dimensions_valid (2ms)`,
+      `> 4 passed, 0 failed ✓`,
     ]
     case 'deploy': return [
       `> kubectl apply -f deployment.yaml --namespace=creatures`,
-      `> deployment.apps/${n.toLowerCase().replace(/\s+/g, '-')}-deploy created`,
+      `> deployment.apps/${slug}-deploy created`,
       `> strategy: ${config.strategy}`,
       `> Waiting for rollout...`,
       `> ${r}/${r} pods available ✓`,
     ]
     case 'monitor': return [
-      `> Configuring liveness probes...`,
+      `> Attaching liveness probe → /healthz (30s interval)`,
       `> Prometheus scrape target registered`,
+      `> Grafana dashboard provisioned`,
       `> All ${r} pods reporting healthy ✓`,
-      `> Dashboard ready — enjoy your creatures`,
     ]
     default: return []
   }
@@ -67,16 +70,16 @@ function logClass(line: string): string {
 
 /** Messages shown while waiting for sprite generation. */
 const SPRITE_QUIPS = [
-  `> Model is breaking down the subject into shapes...`,
-  `> Q1: describing anatomy in constrained vocabulary...`,
-  `> Q2: converting description to shape primitives...`,
-  `> Placing shapes on a 32×32 canvas...`,
-  `> Q3: assigning colours to each body part...`,
-  `> Transformer is deciding where eyes should go...`,
-  `> Triangulating all the pointy bits...`,
-  `> The model keeps trying to add a 7th color. We keep saying no.`,
-  `> Cross-referencing shape vocabulary with anatomy...`,
-  `> Model temperature: 0.4. Crisp and focused.`,
+  `> Q1: encoding subject anatomy into shape vocabulary...`,
+  `> Decomposing description into geometric primitives...`,
+  `> Q2: mapping shape primitives to 64×64 canvas...`,
+  `> Q3: assigning palette to body regions...`,
+  `> Resolving ambiguous silhouette boundaries...`,
+  `> Quantising to 256-colour palette...`,
+  `> Model checked the spec twice. Still disagrees with it.`,
+  `> Cross-referencing pixel boundaries with shape regions...`,
+  `> Model temperature: 0.4`,
+  `> Q4: finalising edge pixels and outline pass...`,
 ]
 
 function shuffled<T>(arr: T[]): T[] {
@@ -133,8 +136,11 @@ export default function Pipeline({ config, onComplete }: Props) {
     let primaryColour = '#00d4ff'
     let completelyFailed = false
 
+    // Fire sprite generation immediately — runs in parallel with fake logs
+    const spritePromise = generateSprite(config.creatureName, config.debugSprites)
+
     async function runPipeline() {
-      const durations = [800, 1200, 800, 1000, 800]
+      const durations = [1200, 1400, 1200, 1000, 1200]
 
       for (let i = 0; i < STAGES.length; i++) {
         if (c.current) return
@@ -146,9 +152,6 @@ export default function Pipeline({ config, onComplete }: Props) {
 
         // ── Build stage: Generate sprite ──
         if (STAGES[i].id === 'build') {
-          await addLogLines(i, stageLines, duration / (stageLines.length + 1), c)
-          if (c.current) return
-
           addLogToStage(i, `> Generating sprite via LLM...`)
 
           const spriteQuips = shuffled(SPRITE_QUIPS)
@@ -158,7 +161,11 @@ export default function Pipeline({ config, onComplete }: Props) {
             addLogToStage(i, spriteQuips[quipIdx++])
           }, 1500)
 
-          const spriteResult = await generateSprite(config.creatureName, config.debugSprites)
+          // Fake logs + real fetch run concurrently; await both
+          const [spriteResult] = await Promise.all([
+            spritePromise,
+            addLogLines(i, stageLines, duration / (stageLines.length + 1), c),
+          ])
           clearInterval(quipTimer)
           if (c.current) return
 
@@ -169,10 +176,10 @@ export default function Pipeline({ config, onComplete }: Props) {
           primaryColour = spriteResult.primaryColour
           completelyFailed = spriteResult.failed && spriteShapes.length === 0
 
-          // CF AI returned a real image — rasterise it to 32×32 pixel grid on the spot
+          // CF AI returned a real image — rasterise it to 64×64 pixel grid on the spot
           if (spriteResult.imageBase64) {
-            addLogToStage(i, `> Rasterising CF AI image to 32×32 grid...`)
-            baseFrame = await rasterizeImageToGrid(spriteResult.imageBase64)
+            addLogToStage(i, `> Rasterising CF AI image to 64×64 grid...`)
+            baseFrame = await rasterizeImageToGrid(spriteResult.imageBase64, 64, spriteResult.bgOps)
             if (c.current) return
             if (baseFrame && baseFrame.length > 0) {
               gridRasterised = true
@@ -184,7 +191,7 @@ export default function Pipeline({ config, onComplete }: Props) {
           }
 
           if (spriteResult.failed) {
-            addLogToStage(i, `> ⚠ ${spriteResult.notice || 'Sprite generation failed'}`)
+            addLogToStage(i, `> ✗ ${spriteResult.notice || 'Sprite generation failed'}`)
             if (completelyFailed) {
               addLogToStage(i, `> Using fallback sprite from warehouse ✓`)
               creatureRef.current = {
