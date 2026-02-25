@@ -181,6 +181,13 @@ a:hover {
   background-clip: text;
 }
 
+.landing-stack {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  letter-spacing: 0.01em;
+  margin-top: 0.5rem;
+}
+
 .landing-subtitle {
   display: flex;
   gap: 0.5rem;

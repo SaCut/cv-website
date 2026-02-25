@@ -20,15 +20,6 @@ export type BgOp =
   | { op: "erode"; passes: number }
   | { op: "dilate"; passes: number }
 
-export type AppState = "landing" | "deploying" | "deployed"
-export type StageStatus = "pending" | "running" | "success" | "failed"
-
-export interface PipelineStage {
-  id: string
-  label: string
-  status: StageStatus
-}
-
 export interface DeployConfig {
   creatureName: string
   replicas: number

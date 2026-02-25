@@ -4,8 +4,9 @@
 
 **Live:** [saveriocutrupi.com](https://saveriocutrupi.com)
 
-An interactive CV that doubles as a live platform engineering demo.
-The deployment pipeline on the site is not simulated — clicking "Deploy" creates a real Kubernetes pod on an Oracle Cloud VM, shared with any other visitors on the site concurrently.
+A platform engineering portfolio built on infrastructure I own and operate: a Terraform-provisioned Oracle Cloud VM running k3s, fronted by a Cloudflare Tunnel, with scoped RBAC and a Cloudflare Worker proxying all k8s API calls — at £0/month.
+
+The interactive surface is a pixel creature generator. Clicking "Deploy" on the site creates a real Kubernetes deployment in the `creatures` namespace, with live pod metrics, restart controls, and a 10-minute TTL before automatic cleanup.
 
 ---
 
@@ -85,7 +86,7 @@ k8s/                  Kubernetes manifests
   creature-rbac.yaml  namespace, ServiceAccount, scoped Role (apps+pods+metrics.k8s.io), token Secret
 worker/               Cloudflare Worker (sprite generation + k8s proxy)
   wrangler.toml       cron trigger: */10 * * * * (orphan cleanup)
-src/                  React frontend (TypeScript, Three.js)
+src/                  React frontend (TypeScript, React)
   components/
     Pipeline.tsx      CI/CD pipeline animation; calls real deploy endpoint
     PodCluster.tsx    Live pod status panel; polls /k8s/pods every 4 s, /k8s/pod-metrics every 10 s

@@ -12,6 +12,7 @@ export default function LandingPage({ onLaunch, onViewCV, onViewInfra, hasDeploy
       <h1 className="landing-name">
         Hi, I'm <span className="highlight">Saverio</span>
       </h1>
+      <p className="landing-stack">Platform: k3s · Cloudflare · Terraform · Oracle Cloud || £0/month</p>
       <div className="landing-subtitle">
         <span className="tag">☁️ Cloud Infra</span>
         <span className="tag">🔧 CI/CD</span>

@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react"
-import type { AppState, CreatureData, DeployConfig } from "./types"
+import type { CreatureData, DeployConfig } from "./types"
 import { teardownCreature } from "./api"
 import LandingPage from "./components/LandingPage"
 import Pipeline from "./components/Pipeline"
