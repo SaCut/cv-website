@@ -1,3 +1,5 @@
+import ThemeToggle from "./ThemeToggle"
+
 interface Props {
   onViewCV: () => void
 }
@@ -9,7 +11,8 @@ export default function StickyHeader({ onViewCV }: Props) {
         <span className="header-name">Saverio Cutrupi</span>
       </div>
       <div className="header-right">
-        <button className="header-btn cv" onClick={onViewCV}>📄 CV</button>
+        <ThemeToggle />
+        <button className="header-btn cv" onClick={onViewCV}>CV</button>
         <a className="header-btn" href="mailto:saveriocutrupi@hotmail.com">📬</a>
         <a
           className="header-btn"

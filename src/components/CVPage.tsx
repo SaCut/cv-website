@@ -9,7 +9,7 @@ export default function CVPage({ onBack }: Props) {
   return (
     <div className="cv-page">
       <button className="cv-back-btn" onClick={onBack}>
-        ⬅ Back to pods
+        ⬅ Back
       </button>
 
       {/* ── header ─────────────────────────────────── */}

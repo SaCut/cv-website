@@ -221,8 +221,8 @@ export default function InfraPage({ onBack }: Props) {
           </li>
           <li>
             The browser receives the image + bg-ops plan. Rasterisation happens
-            client-side: bilateral filter, edge-seeded flood fill, erosion →
-            32×32 pixel grid.
+            client-side: unsharp mask, BFS flood fill, erosion → 64×64 pixel
+            grid.
           </li>
           <li>
             The worker creates a real <strong>k3s Deployment</strong> on Oracle

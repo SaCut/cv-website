@@ -1,10 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, user-scalable=yes" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <title>Saverio Cutrupi</title>
+    <script>
+      // Apply stored theme before first paint
+      (function() {
+        var t = localStorage.getItem('theme')
+        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t)
+      })()
+    </script>
     <script>
       // Recover path after GitHub Pages 404 redirect
       var _r = sessionStorage.getItem('_spa_redirect')

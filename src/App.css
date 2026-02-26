@@ -9,55 +9,144 @@
 }
 
 :root {
-  --bg: #fdf6ec;
-  --bg-card: #ffffff;
-  --bg-term: #2b2d42;
-  --accent: #7c3aed;
-  --green: #10b981;
-  --orange: #f59e0b;
-  --red: #ef4444;
-  --pink: #ec4899;
-  --blue: #3b82f6;
-  --cyan: #06b6d4;
-  --text: #1e293b;
-  --text-muted: #64748b;
-  --text-light: #ffffff;
-  --border: #e2e8f0;
-  --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  --shadow-pop: 0 8px 30px rgba(124, 58, 237, 0.15);
+  /* surfaces */
+  --bg: #0f172a;
+  --bg-card: #1e293b;
+  --bg-term: #111827;
+  --bg-alt: #172033;
+  --bg-glass: rgba(15, 23, 42, 0.85);
+  --bg-viewport: linear-gradient(180deg, #1e293b 0%, #172033 100%);
+
+  /* accent */
+  --accent: #818cf8;
+  --accent-secondary: #22d3ee;
+  --accent-subtle: rgba(129, 140, 248, 0.1);
+  --accent-glow: rgba(129, 140, 248, 0.2);
+
+  /* semantic */
+  --green: #34d399;
+  --green-subtle: rgba(52, 211, 153, 0.12);
+  --green-glow: rgba(52, 211, 153, 0.2);
+  --orange: #fbbf24;
+  --red: #f87171;
+  --red-subtle: rgba(248, 113, 113, 0.1);
+  --pink: #f472b6;
+  --blue: #60a5fa;
+  --blue-subtle: rgba(96, 165, 250, 0.1);
+  --cyan: #22d3ee;
+
+  /* text */
+  --text: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-light: #f1f5f9;
+  --text-on-color: #ffffff;
+
+  /* borders & shadows */
+  --border: #334155;
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  --shadow-pop: 0 8px 30px rgba(129, 140, 248, 0.15);
+
+  /* terminal palette (invariant — always on dark bg) */
   --text-term: #94a3b8;
+  --term-text: #e2e8f0;
+  --term-green: #4ade80;
+  --term-blue: #60a5fa;
+  --term-purple: #a78bfa;
+  --term-yellow: #fbbf24;
+  --term-orange: #fb923c;
+  --term-red: #fca5a5;
+  --term-bright-green: #86efac;
+  --term-border: rgba(255, 255, 255, 0.12);
+  --term-border-subtle: rgba(255, 255, 255, 0.07);
+  --term-bg-inset: rgba(0, 0, 0, 0.25);
+  --term-btn-bg: rgba(255, 255, 255, 0.06);
+
+  /* code inline */
+  --code-bg: rgba(129, 140, 248, 0.1);
+
+  /* CV tiers */
+  --tier-core-bg: rgba(52, 211, 153, 0.12);
+  --tier-core-text: #34d399;
+  --tier-familiar-bg: rgba(96, 165, 250, 0.1);
+  --tier-familiar-text: #60a5fa;
+  --tier-exploring-bg: rgba(129, 140, 248, 0.1);
+
+  /* skill pills */
+  --pill-core-bg: rgba(52, 211, 153, 0.1);
+  --pill-core-border: rgba(52, 211, 153, 0.2);
+  --pill-familiar-bg: rgba(96, 165, 250, 0.08);
+  --pill-familiar-border: rgba(96, 165, 250, 0.15);
+  --pill-exploring-bg: rgba(129, 140, 248, 0.08);
+  --pill-exploring-border: rgba(129, 140, 248, 0.12);
+
+  /* typography & layout */
   --mono: "Space Mono", monospace;
   --sans: "Inter", system-ui, sans-serif;
   --radius: 16px;
 }
 
+[data-theme="light"] {
+  --bg: #fafaf9;
+  --bg-card: #ffffff;
+  --bg-term: #1e293b;
+  --bg-alt: #f5f5f4;
+  --bg-glass: rgba(250, 250, 249, 0.85);
+  --bg-viewport: linear-gradient(180deg, #e8e5f0 0%, #eee8ed 50%, #e5eef8 100%);
+
+  --accent: #6366f1;
+  --accent-secondary: #06b6d4;
+  --accent-subtle: rgba(99, 102, 241, 0.07);
+  --accent-glow: rgba(99, 102, 241, 0.15);
+
+  --green: #10b981;
+  --green-subtle: rgba(16, 185, 129, 0.1);
+  --green-glow: rgba(16, 185, 129, 0.2);
+  --orange: #f59e0b;
+  --red: #ef4444;
+  --red-subtle: rgba(239, 68, 68, 0.08);
+  --pink: #ec4899;
+  --blue: #3b82f6;
+  --blue-subtle: rgba(59, 130, 246, 0.08);
+  --cyan: #06b6d4;
+
+  --text: #1e293b;
+  --text-muted: #64748b;
+  --text-light: #ffffff;
+  --text-on-color: #ffffff;
+
+  --border: #e5e7eb;
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  --shadow-pop: 0 8px 30px rgba(99, 102, 241, 0.12);
+
+  --code-bg: rgba(99, 102, 241, 0.08);
+
+  --tier-core-bg: rgba(16, 185, 129, 0.12);
+  --tier-core-text: #059669;
+  --tier-familiar-bg: rgba(59, 130, 246, 0.1);
+  --tier-familiar-text: #2563eb;
+  --tier-exploring-bg: rgba(99, 102, 241, 0.1);
+
+  --pill-core-bg: rgba(16, 185, 129, 0.1);
+  --pill-core-border: rgba(16, 185, 129, 0.2);
+  --pill-familiar-bg: rgba(59, 130, 246, 0.08);
+  --pill-familiar-border: rgba(59, 130, 246, 0.15);
+  --pill-exploring-bg: rgba(99, 102, 241, 0.08);
+  --pill-exploring-border: rgba(99, 102, 241, 0.12);
+}
+
 html,
 body,
 #root {
-  height: 100%;
+  min-height: 100%;
 }
 
 body {
   font-family: var(--sans);
   background: var(--bg);
-  background-image:
-    radial-gradient(
-      circle at 20% 50%,
-      rgba(124, 58, 237, 0.06) 0%,
-      transparent 50%
-    ),
-    radial-gradient(
-      circle at 80% 20%,
-      rgba(236, 72, 153, 0.06) 0%,
-      transparent 50%
-    ),
-    radial-gradient(
-      circle at 60% 80%,
-      rgba(6, 182, 212, 0.06) 0%,
-      transparent 50%
-    );
+  background-attachment: fixed;
   color: var(--text);
   overflow-x: hidden;
+  transition: background 0.3s, color 0.3s;
 }
 
 a {
@@ -155,16 +244,20 @@ a:hover {
 /* ─── landing page ────────────────────────────────── */
 
 .landing {
+  position: relative;
   text-align: center;
   padding: 3rem 1.5rem;
   max-width: 640px;
   animation: fadeIn 0.6s ease;
 }
 
-.landing-emoji {
-  font-size: 4rem;
-  margin-bottom: 0.5rem;
-  animation: bounce 2s ease infinite;
+.landing-marker {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.05em;
 }
 
 .landing-name {
@@ -175,7 +268,7 @@ a:hover {
 }
 
 .landing-name .highlight {
-  background: linear-gradient(135deg, var(--accent), var(--pink), var(--cyan));
+  background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -185,7 +278,7 @@ a:hover {
   font-size: 0.8rem;
   color: var(--text-muted);
   letter-spacing: 0.01em;
-  margin-top: 0.5rem;
+  margin-top: 1rem;
 }
 
 .landing-subtitle {
@@ -193,26 +286,49 @@ a:hover {
   gap: 0.5rem;
   justify-content: center;
   flex-wrap: wrap;
-  margin-top: 1rem;
+  margin-top: 1.5rem;
 }
 
 .landing-subtitle .tag {
   display: inline-block;
-  color: var(--text);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  background: rgba(124, 58, 237, 0.08);
-  border: 1.5px solid rgba(124, 58, 237, 0.15);
-  border-radius: 20px;
-  padding: 0.25rem 0.7rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--accent-subtle);
+  border: 1px solid var(--accent-glow);
+  border-radius: 5px;
+  padding: 0.2rem 0.55rem;
+}
+
+.landing-role {
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-top: 0.75rem;
+  line-height: 1.6;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.landing-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  width: 60%;
+  margin: 2rem auto 0;
 }
 
 .landing-bio {
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: var(--text-muted);
-  margin-top: 1.5rem;
+  margin-top: 1.25rem;
   line-height: 1.7;
+}
+
+.landing-bio + .landing-bio {
+  margin-top: 0.4rem;
 }
 
 .btn-launch,
@@ -232,15 +348,15 @@ a:hover {
 
 .btn-launch {
   margin-top: 2.5rem;
-  color: #fff;
-  background: linear-gradient(135deg, var(--accent), var(--pink));
+  color: var(--text-on-color);
+  background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
   border: none;
   box-shadow: var(--shadow-pop);
 }
 
 .btn-launch:hover {
   transform: translateY(-3px) scale(1.03);
-  box-shadow: 0 12px 40px rgba(124, 58, 237, 0.3);
+  box-shadow: 0 12px 40px var(--accent-glow);
 }
 
 .btn-cv {
@@ -256,7 +372,7 @@ a:hover {
 
 .btn-cv:hover {
   transform: translateY(-3px) scale(1.03);
-  background: rgba(124, 58, 237, 0.06);
+  background: var(--accent-subtle);
   box-shadow: var(--shadow-pop);
 }
 
@@ -272,6 +388,10 @@ a:hover {
   align-items: center;
   margin-top: 2.5rem;
   flex-wrap: wrap;
+}
+
+.landing-bio + .landing-cta-row {
+  margin-top: 1rem;
 }
 
 .landing-cta-row .btn-launch {
@@ -372,7 +492,7 @@ a:hover {
 
 .config-field input[type="text"]:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1);
+  box-shadow: 0 0 0 4px var(--accent-subtle);
 }
 
 .config-field input[type="range"] {
@@ -435,7 +555,7 @@ a:hover {
   padding: 0.9rem;
   font-size: 1rem;
   font-weight: 800;
-  color: #fff;
+  color: var(--text-on-color);
   background: linear-gradient(135deg, var(--green), var(--cyan));
   border: none;
   border-radius: 12px;
@@ -443,12 +563,12 @@ a:hover {
   transition:
     transform 0.2s,
     box-shadow 0.3s;
-  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.25);
+  box-shadow: 0 4px 15px var(--green-glow);
 }
 
 .btn-deploy:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 8px 25px var(--green-glow);
 }
 
 .btn-deploy:disabled {
@@ -512,21 +632,21 @@ a:hover {
 .stage-dot.running {
   border-color: var(--accent);
   color: var(--accent);
-  box-shadow: 0 0 0 6px rgba(124, 58, 237, 0.15);
+  box-shadow: 0 0 0 6px var(--accent-glow);
   animation: pulse 1.2s infinite;
 }
 
 .stage-dot.success {
   border-color: var(--green);
   background: var(--green);
-  color: #fff;
-  box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.15);
+  color: var(--text-on-color);
+  box-shadow: 0 0 0 6px var(--green-glow);
 }
 
 .stage-dot.failed {
   border-color: var(--red);
   background: var(--red);
-  color: #fff;
+  color: var(--text-on-color);
 }
 
 .stage-label {
@@ -551,7 +671,7 @@ a:hover {
 }
 
 .pipeline-stage.tab-active .stage-dot {
-  box-shadow: 0 0 0 6px rgba(124, 58, 237, 0.25);
+  box-shadow: 0 0 0 6px var(--accent-glow);
 }
 
 .stage-connector {
@@ -599,15 +719,15 @@ a:hover {
 }
 
 .pipeline-logs .log-line.success {
-  color: #34d399;
+  color: var(--term-green);
 }
 
 .pipeline-logs .log-line.info {
-  color: #a78bfa;
+  color: var(--term-purple);
 }
 
 .pipeline-logs .log-line.notice {
-  color: #fbbf24;
+  color: var(--term-yellow);
   font-style: italic;
   padding: 0.3rem 0;
 }
@@ -633,8 +753,8 @@ a:hover {
   padding: 0.6rem 1.6rem;
   font-size: 0.85rem;
   font-weight: 800;
-  color: var(--text-light);
-  background: linear-gradient(135deg, var(--accent), var(--pink));
+  color: var(--text-on-color);
+  background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
   border: none;
   border-radius: 12px;
   cursor: pointer;
@@ -762,7 +882,7 @@ a:hover {
 .btn-reset:hover {
   border-color: var(--red);
   color: var(--red);
-  background: #fff5f5;
+  background: var(--red-subtle);
 }
 
 /* ── deployment details panel ── */
@@ -783,12 +903,12 @@ a:hover {
 }
 
 .detail-label {
-  color: #60a5fa;
+  color: var(--term-blue);
   min-width: 120px;
 }
 
 .detail-value {
-  color: #e2e8f0;
+  color: var(--term-text);
 }
 
 /* ── kubectl try-it section ── */
@@ -796,14 +916,14 @@ a:hover {
 .kubectl-section {
   margin-top: 0.8rem;
   padding-top: 0.8rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  border-top: 1px solid var(--term-border-subtle);
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
 }
 
 .kubectl-heading {
-  color: #60a5fa;
+  color: var(--term-blue);
   font-size: 0.62rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -814,19 +934,19 @@ a:hover {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--term-bg-inset);
   border-radius: 4px;
   padding: 0.25rem 0.5rem;
 }
 
 .kubectl-prompt {
-  color: #4ade80;
+  color: var(--term-green);
   user-select: none;
   flex-shrink: 0;
 }
 
 .kubectl-cmd {
-  color: #e2e8f0;
+  color: var(--term-text);
   flex: 1;
   font-size: 0.65rem;
   overflow: hidden;
@@ -837,7 +957,7 @@ a:hover {
 .kubectl-copy {
   flex-shrink: 0;
   background: none;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--term-border);
   border-radius: 3px;
   color: var(--text-term);
   font-family: var(--mono);
@@ -850,14 +970,14 @@ a:hover {
 }
 
 .kubectl-copy:hover {
-  border-color: #60a5fa;
-  color: #60a5fa;
+  border-color: var(--term-blue);
+  color: var(--term-blue);
 }
 
 .kubectl-copy:active,
 .kubectl-copy[data-copied] {
-  border-color: #4ade80;
-  color: #4ade80;
+  border-color: var(--term-green);
+  color: var(--term-green);
 }
 
 .pod-grid {
@@ -912,8 +1032,8 @@ a:hover {
   font-size: 0.7rem;
   padding: 0.1rem 0.35rem;
   border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--term-border);
+  background: var(--term-btn-bg);
   color: var(--text-term);
   cursor: pointer;
   transition: all 0.15s;
@@ -921,9 +1041,9 @@ a:hover {
 }
 
 .btn-pod-restart:hover {
-  background: rgba(99, 179, 237, 0.18);
-  border-color: #63b3ed;
-  color: #63b3ed;
+  background: var(--blue-subtle);
+  border-color: var(--term-blue);
+  color: var(--term-blue);
 }
 
 /* relaunch deployment button */
@@ -931,7 +1051,7 @@ a:hover {
 .btn-relaunch:hover {
   border-color: var(--green);
   color: var(--green);
-  background: rgba(34, 197, 94, 0.06);
+  background: var(--green-subtle);
 }
 
 .title-bar .pod-name {
@@ -955,7 +1075,7 @@ a:hover {
 .pod-status.running,
 .pod-status.terminated,
 .pod-status.pending {
-  color: #fff;
+  color: var(--text-on-color);
 }
 .pod-status.running {
   background: var(--green);
@@ -972,18 +1092,18 @@ a:hover {
   font-size: 0.6rem;
   padding: 0.25rem 0.6rem;
   border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid var(--term-border);
   cursor: pointer;
   font-weight: 600;
   transition:
     background 0.2s,
     transform 0.1s;
-  background: rgba(239, 68, 68, 0.2);
-  color: #fca5a5;
+  background: var(--red-subtle);
+  color: var(--term-red);
 }
 
 .btn-stop:hover {
-  background: rgba(239, 68, 68, 0.4);
+  background: var(--red-subtle);
   transform: scale(1.04);
 }
 
@@ -996,12 +1116,12 @@ a:hover {
 }
 
 .pod-stopped .btn-stop {
-  background: rgba(34, 197, 94, 0.2);
-  color: #86efac;
+  background: var(--green-subtle);
+  color: var(--term-bright-green);
 }
 
 .pod-stopped .btn-stop:hover {
-  background: rgba(34, 197, 94, 0.4);
+  background: var(--green-glow);
 }
 
 .terminal-pod .pixel-viewport {
@@ -1011,7 +1131,7 @@ a:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(180deg, #e8dff5 0%, #fce7f3 50%, #e0f2fe 100%);
+  background: var(--bg-viewport);
 }
 
 .pixel-creature .vx {
@@ -1034,19 +1154,19 @@ a:hover {
 }
 
 .pod-logs .level-init {
-  color: #60a5fa;
+  color: var(--term-blue);
 }
 .pod-logs .level-main {
-  color: #a78bfa;
+  color: var(--term-purple);
 }
 .pod-logs .level-health {
-  color: #34d399;
+  color: var(--term-green);
 }
 .pod-logs .level-metrics {
-  color: #fbbf24;
+  color: var(--term-yellow);
 }
 .pod-logs .level-warn {
-  color: #fb923c;
+  color: var(--term-orange);
 }
 
 .terminal-pod .pod-meta {
@@ -1111,10 +1231,10 @@ a:hover {
 @keyframes pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 6px rgba(124, 58, 237, 0.1);
+    box-shadow: 0 0 0 6px var(--accent-subtle);
   }
   50% {
-    box-shadow: 0 0 0 10px rgba(124, 58, 237, 0.2);
+    box-shadow: 0 0 0 10px var(--accent-glow);
   }
 }
 
@@ -1151,7 +1271,7 @@ a:hover {
   align-items: center;
   justify-content: space-between;
   padding: 0.5rem 1.5rem;
-  background: rgba(253, 246, 236, 0.88);
+  background: var(--bg-glass);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
@@ -1220,20 +1340,52 @@ a:hover {
 }
 
 .header-btn.cv {
-  background: linear-gradient(135deg, var(--accent), var(--pink));
-  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+  color: var(--text-on-color);
   border-color: transparent;
 }
 
 .header-btn.cv:hover {
-  color: #fff;
+  color: var(--text-on-color);
   transform: translateY(-2px);
-  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3);
+  box-shadow: 0 4px 14px var(--accent-glow);
 }
 
 /* deployed view needs top padding for sticky header */
 .sticky-header ~ .cluster-view {
   padding-top: 4rem;
+}
+
+/* ─── theme toggle ────────────────────────────────── */
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  font-size: 1rem;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    color 0.2s,
+    transform 0.1s;
+}
+
+.theme-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.landing > .theme-toggle {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
 }
 
 /* ─── CV page ─────────────────────────────────────── */
@@ -1390,17 +1542,17 @@ a:hover {
 }
 
 .tier-badge.core {
-  background: rgba(16, 185, 129, 0.12);
-  color: #059669;
+  background: var(--tier-core-bg);
+  color: var(--tier-core-text);
 }
 
 .tier-badge.familiar {
-  background: rgba(59, 130, 246, 0.1);
-  color: #2563eb;
+  background: var(--tier-familiar-bg);
+  color: var(--tier-familiar-text);
 }
 
 .tier-badge.exploring {
-  background: rgba(124, 58, 237, 0.1);
+  background: var(--tier-exploring-bg);
   color: var(--accent);
 }
 
@@ -1425,18 +1577,18 @@ a:hover {
 }
 
 .cv-skill-pill.core {
-  background: rgba(16, 185, 129, 0.1);
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  background: var(--pill-core-bg);
+  border: 1px solid var(--pill-core-border);
 }
 
 .cv-skill-pill.familiar {
-  background: rgba(59, 130, 246, 0.08);
-  border: 1px solid rgba(59, 130, 246, 0.15);
+  background: var(--pill-familiar-bg);
+  border: 1px solid var(--pill-familiar-border);
 }
 
 .cv-skill-pill.exploring {
-  background: rgba(124, 58, 237, 0.08);
-  border: 1px solid rgba(124, 58, 237, 0.12);
+  background: var(--pill-exploring-bg);
+  border: 1px solid var(--pill-exploring-border);
 }
 
 /* ── experience roles ─── */
@@ -1661,8 +1813,8 @@ a:hover {
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: #0d1117;
-  background: #3fb950;
+  color: var(--term-bg-inset);
+  background: var(--term-green);
   border-radius: 3px;
   vertical-align: middle;
 }
@@ -1685,7 +1837,7 @@ a:hover {
   font-size: 7rem;
   font-weight: 700;
   line-height: 1;
-  background: linear-gradient(135deg, var(--accent), var(--pink));
+  background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1902,7 +2054,7 @@ a:hover {
 .infra-connections code {
   font-family: var(--mono);
   font-size: 0.78rem;
-  background: rgba(124, 58, 237, 0.08);
+  background: var(--code-bg);
   padding: 0.1rem 0.35rem;
   border-radius: 4px;
   color: var(--accent);
@@ -1954,7 +2106,7 @@ a:hover {
 .infra-narrative code {
   font-family: var(--mono);
   font-size: 0.82rem;
-  background: rgba(124, 58, 237, 0.08);
+  background: var(--code-bg);
   padding: 0.15rem 0.4rem;
   border-radius: 4px;
   color: var(--accent);

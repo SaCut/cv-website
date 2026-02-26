@@ -1,3 +1,5 @@
+import ThemeToggle from "./ThemeToggle"
+
 interface Props {
   onLaunch: () => void
   onViewCV: () => void
@@ -5,42 +7,53 @@ interface Props {
   hasDeployment: boolean
 }
 
-export default function LandingPage({ onLaunch, onViewCV, onViewInfra, hasDeployment }: Props) {
+export default function LandingPage({
+  onLaunch,
+  onViewCV,
+  onViewInfra,
+  hasDeployment,
+}: Props) {
   return (
     <div className="landing">
-      <div className="landing-emoji">🚀</div>
+      <ThemeToggle />
       <h1 className="landing-name">
         Hi, I'm <span className="highlight">Saverio</span>
       </h1>
-      <p className="landing-stack">Platform: k3s · Cloudflare · Terraform · Oracle Cloud || £0/month</p>
+      <p className="landing-role">
+        I build pipelines and tooling with AI so that important processes can
+        happen with the press of a single button.
+      </p>
       <div className="landing-subtitle">
         <span className="tag">☁️ Cloud Infra</span>
         <span className="tag">🔧 CI/CD</span>
         <span className="tag">🐳 Containers</span>
         <span className="tag">✨ Dev Experience</span>
       </div>
+
+      <hr className="landing-divider" />
+
       <p className="landing-bio">
-        I build the platforms that ship the product — CI/CD pipelines,
-        Kubernetes clusters, and the developer tooling that makes teams
-        fast. This site runs a pipeline that deploys creature pods to a
-        k3s cluster on Oracle Cloud. Give it a go.
+        Generate a sprite, deploy it to k3s, watch the pods come up.
       </p>
       <div className="landing-cta-row">
         <button className="btn-launch" onClick={onLaunch}>
-          {hasDeployment ? '👀 View Deployment' : '🚀 Launch Pods'}
+          {hasDeployment ? "👀 View Deployment" : "🚀 Launch Pods"}
         </button>
       </div>
       <div className="landing-cta-row">
         <button className="btn-cv" onClick={onViewInfra}>
-          🗺️ Current Architecture
+          About
         </button>
         <button className="btn-cv" onClick={onViewCV}>
-          📄 My CV
+          CV
         </button>
       </div>
       <div className="landing-links">
         <a href="mailto:saveriocutrupi@hotmail.com">📬 Email</a>
-        <a href="https://linkedin.com/in/saverio-cutrupi" target="_blank" rel="noopener noreferrer">
+        <a
+          href="https://linkedin.com/in/saverio-cutrupi"
+          target="_blank"
+          rel="noopener noreferrer">
           💼 LinkedIn
         </a>
       </div>
