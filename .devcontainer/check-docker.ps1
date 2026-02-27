@@ -20,7 +20,7 @@ if (-not $dockerCmd) {
             exit 0
         }
     } else {
-        Write-Host "   (winget not available — install it via the Microsoft Store as 'App Installer')" -ForegroundColor Yellow
+        Write-Host "   (winget not available - install it via the Microsoft Store as 'App Installer')" -ForegroundColor Yellow
     }
 
     Write-Host ""
@@ -39,7 +39,7 @@ if ($LASTEXITCODE -ne 0) {
     $dockerDesktop = "${env:ProgramFiles}\Docker\Docker\Docker Desktop.exe"
     if (Test-Path $dockerDesktop) {
         Start-Process $dockerDesktop
-        Write-Host "   Docker Desktop is starting — wait for the system tray icon, then try again." -ForegroundColor Yellow
+        Write-Host "   Docker Desktop is starting - wait for the system tray icon, then try again." -ForegroundColor Yellow
     } else {
         Write-Host "   Open Docker Desktop from the Start menu and wait for it to start." -ForegroundColor Yellow
     }

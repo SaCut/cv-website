@@ -1,11 +1,11 @@
-# Animated containers — design intent
+# Animated containers - design intent
 
 ## What we want
 
 Each running container displays a pixel art animation that:
 
 - Reflects the nature of the deployed subject (a creature walks, a machine hums, a plant sways)
-- Runs independently per container — same deployment, divergent animation states
+- Runs independently per container - same deployment, divergent animation states
 - Uses rasterised video frames rather than hand-authored sprite sheets
 - Looks intentionally pixel art, not like a degraded video
 
@@ -46,7 +46,7 @@ The frame count and interval should be determined by the animation type, not har
 
 The frontend receives all N frames for the animation. Each container tile picks a random initial frame offset on mount and advances independently on its own timer.
 
-No shared animation state. Same frames, different phase — visually distinct without requiring separate generation per pod.
+No shared animation state. Same frames, different phase - visually distinct without requiring separate generation per pod.
 
 Implementation: each `PodTile` component holds local frame index state, initialised to `Math.floor(Math.random() * frameCount)`.
 

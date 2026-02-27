@@ -22,7 +22,7 @@ const CAT: CreatureData = {
   name: 'cat',
   primaryColour: '#FF9944',
   frames: [
-    // Frame 1: idle — sitting, tail curled right, ears up
+    // Frame 1: idle - sitting, tail curled right, ears up
     [
       [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
       [_,_,_,O,_,_,_,_,_,_,_,_,_,_,_,O,_,_,_,_],
@@ -45,7 +45,7 @@ const CAT: CreatureData = {
       [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,O,O,_,_,_],
       [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,O,O,_,_],
     ],
-    // Frame 2: beginning movement — ears tilt, tail lifts
+    // Frame 2: beginning movement - ears tilt, tail lifts
     [
       [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
       [_,_,_,O,O,_,_,_,_,_,_,_,_,_,_,O,_,_,_,_],
@@ -68,7 +68,7 @@ const CAT: CreatureData = {
       [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,O,O,_,_],
       [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,O,O,_],
     ],
-    // Frame 3: mid — tail swinging up-right, front paw lifts
+    // Frame 3: mid - tail swinging up-right, front paw lifts
     [
       [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
       [_,_,_,O,_,_,_,_,_,_,_,_,_,_,_,O,_,_,_,_],
@@ -91,7 +91,7 @@ const CAT: CreatureData = {
       [_,_,_,O,_,_,_,_,_,_,_,_,_,_,_,_,O,O,_,_],
       [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,O,_,_],
     ],
-    // Frame 4: peak — tail fully up, paw stretched, eyes wide
+    // Frame 4: peak - tail fully up, paw stretched, eyes wide
     [
       [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
       [_,_,_,O,_,_,_,_,_,_,_,_,_,_,_,O,_,_,_,_],
@@ -114,7 +114,7 @@ const CAT: CreatureData = {
       [_,_,O,O,_,_,_,_,_,_,_,_,_,_,_,O,O,_,_,_],
       [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
     ],
-    // Frame 5: returning — tail swinging back, paw lowering
+    // Frame 5: returning - tail swinging back, paw lowering
     [
       [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
       [_,_,_,O,_,_,_,_,_,_,_,_,_,_,_,O,_,_,_,_],
@@ -137,7 +137,7 @@ const CAT: CreatureData = {
       [_,_,_,_,O,O,_,_,_,_,_,_,_,_,_,_,O,O,_,_],
       [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,O,_,_],
     ],
-    // Frame 6: settling — back to idle, slight ear twitch
+    // Frame 6: settling - back to idle, slight ear twitch
     [
       [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
       [_,_,_,O,_,_,_,_,_,_,_,_,_,_,O,O,_,_,_,_],
@@ -169,7 +169,7 @@ const ROBOT: CreatureData = {
   name: 'robot',
   primaryColour: '#66CCFF',
   frames: [
-    // Frame 1: idle — standing straight, arms down
+    // Frame 1: idle - standing straight, arms down
     [
       [_,_,_,_,_,_,_,_,_,M,M,_,_,_,_,_,_,_,_,_],
       [_,_,_,_,_,_,_,_,M,U,U,M,_,_,_,_,_,_,_,_],
@@ -192,7 +192,7 @@ const ROBOT: CreatureData = {
       [_,_,_,_,_,_,_,_,M,M,M,M,_,_,_,_,_,_,_,_],
       [_,_,_,_,_,_,_,M,M,M,M,M,M,_,_,_,_,_,_,_],
     ],
-    // Frame 2: beginning movement — left arm out, right in
+    // Frame 2: beginning movement - left arm out, right in
     [
       [_,_,_,_,_,_,_,_,_,M,M,_,_,_,_,_,_,_,_,_],
       [_,_,_,_,_,_,_,_,M,U,U,M,_,_,_,_,_,_,_,_],
@@ -215,7 +215,7 @@ const ROBOT: CreatureData = {
       [_,_,_,_,_,_,_,_,M,M,M,M,_,_,_,_,_,_,_,_],
       [_,_,_,_,_,_,_,M,M,M,M,M,M,_,_,_,_,_,_,_],
     ],
-    // Frame 3: mid — left arm fully out, right arm back
+    // Frame 3: mid - left arm fully out, right arm back
     [
       [_,_,_,_,_,_,_,_,_,M,M,_,_,_,_,_,_,_,_,_],
       [_,_,_,_,_,_,_,_,M,U,U,M,_,_,_,_,_,_,_,_],
@@ -238,7 +238,7 @@ const ROBOT: CreatureData = {
       [_,_,_,_,_,_,_,_,M,M,M,M,_,_,_,_,_,_,_,_],
       [_,_,_,_,_,_,_,M,M,M,M,M,M,_,_,_,_,_,_,_],
     ],
-    // Frame 4: peak — arms swapped: right out, left in, antenna tilts
+    // Frame 4: peak - arms swapped: right out, left in, antenna tilts
     [
       [_,_,_,_,_,_,_,_,_,_,M,M,_,_,_,_,_,_,_,_],
       [_,_,_,_,_,_,_,_,M,U,U,M,_,_,_,_,_,_,_,_],
@@ -261,7 +261,7 @@ const ROBOT: CreatureData = {
       [_,_,_,_,_,_,_,_,M,M,M,M,_,_,_,_,_,_,_,_],
       [_,_,_,_,_,_,_,M,M,M,M,M,M,_,_,_,_,_,_,_],
     ],
-    // Frame 5: returning — right arm lowering, left rising
+    // Frame 5: returning - right arm lowering, left rising
     [
       [_,_,_,_,_,_,_,_,_,M,M,_,_,_,_,_,_,_,_,_],
       [_,_,_,_,_,_,_,_,M,U,U,M,_,_,_,_,_,_,_,_],
@@ -284,7 +284,7 @@ const ROBOT: CreatureData = {
       [_,_,_,_,_,_,_,_,M,M,M,M,_,_,_,_,_,_,_,_],
       [_,_,_,_,_,_,_,M,M,M,M,M,M,_,_,_,_,_,_,_],
     ],
-    // Frame 6: settling — arms almost back, antenna bob
+    // Frame 6: settling - arms almost back, antenna bob
     [
       [_,_,_,_,_,_,_,_,_,_,M,M,_,_,_,_,_,_,_,_],
       [_,_,_,_,_,_,_,_,_,M,U,M,_,_,_,_,_,_,_,_],

@@ -8,25 +8,25 @@ const API_URL =
 
 export interface GenerateResult {
   creature: CreatureData
-  /** The AI was entirely unavailable — using a pre-baked fallback creature. */
+  /** The AI was entirely unavailable - using a pre-baked fallback creature. */
   aiFailed: boolean
-  /** The preferred model was unavailable — a different model stepped in. */
+  /** The preferred model was unavailable - a different model stepped in. */
   fallbackModel: boolean
   /** Human-readable notice for the pipeline log. */
   notice?: string
 }
 
 const FALLBACK_QUIPS = [
-  `Oops — looks like the bot is sleeping! We'll grab a pre-baked creature from the warehouse instead.`,
+  `Oops - looks like the bot is sleeping! We'll grab a pre-baked creature from the warehouse instead.`,
   `The AI is off on a tea break. Good thing we keep spare creatures in the back!`,
   `Well, the robot artist called in sick. Luckily the warehouse has some classics.`,
-  `AI unavailable — but no worries, we planned for this. Fetching a pre-built creature!`,
+  `AI unavailable - but no worries, we planned for this. Fetching a pre-built creature!`,
   `The model's having a lie-down. Time to rummage through the creature archives!`,
 ]
 
 const MODEL_SWAP_QUIPS = [
-  `Preferred model was busy — a backup model stepped in. Teamwork!`,
-  `Primary model unavailable — another one picked up the brush. Seamless.`,
+  `Preferred model was busy - a backup model stepped in. Teamwork!`,
+  `Primary model unavailable - another one picked up the brush. Seamless.`,
   `Our first-choice model was napping, so a colleague covered the shift.`,
 ]
 
@@ -45,7 +45,7 @@ export async function generateSprite(
   description: string
   primaryColour: string
   failed: boolean
-  /** Base64 PNG returned by CF Workers AI — skips animation pipeline when present. */
+  /** Base64 PNG returned by CF Workers AI - skips animation pipeline when present. */
   imageBase64?: string
   /** Background removal operation plan chosen by the vision model. */
   bgOps?: BgOp[]
@@ -92,7 +92,7 @@ export async function generateSprite(
 
     const data = await res.json()
 
-    // CF Workers AI image path — base64 for frontend rasterisation
+    // CF Workers AI image path - base64 for frontend rasterisation
     if (data.imageBase64) {
       if (debug) logSpriteResponse(name, data.imageBase64, data).catch(() => {})
       return {
@@ -283,7 +283,7 @@ export function rasterizeImageToGrid(
   return new Promise((resolve) => {
     const img = new Image()
     img.onload = () => {
-      // Single native-resolution canvas — matches the lab pipeline exactly.
+      // Single native-resolution canvas - matches the lab pipeline exactly.
       // No small-scale pass; bg mask and colour sampling both operate at native scale.
       const nativeSize = Math.max(img.naturalWidth || 512, 512)
       const nCanvas = document.createElement("canvas")
@@ -507,7 +507,7 @@ export function rasterizeImageToGrid(
       const nd = unsharpMask(raw, nativeSize, nativeSize, 1.5)
 
       const blockSize = nativeSize / size
-      // Skip outer 30% of each block — avoids sampling straddling pixels.
+      // Skip outer 30% of each block - avoids sampling straddling pixels.
       const INNER = 0.3
 
       const grid: PixelFrame = []
@@ -522,7 +522,7 @@ export function rasterizeImageToGrid(
 
           for (let sy = y0; sy < y1; sy++) {
             for (let sx = x0; sx < x1; sx++) {
-              // Per-source-pixel bg check — matches lab behaviour.
+              // Per-source-pixel bg check - matches lab behaviour.
               if (nativeMask[sy * nativeSize + sx]) continue
               const si = (sy * nativeSize + sx) * 4
               if (nd[si + 3] < 128) continue
@@ -817,7 +817,7 @@ export async function restartPod(podName: string): Promise<boolean> {
  * Ping the worker to reset the TTL for this deployment.
  * Called periodically while the user is actively viewing their pod cluster,
  * so the cleanup cron does not cull a deployment that is still being watched.
- * Errors are swallowed — a missed heartbeat is not fatal.
+ * Errors are swallowed - a missed heartbeat is not fatal.
  */
 export async function heartbeat(deploymentName: string): Promise<void> {
   try {
@@ -827,6 +827,6 @@ export async function heartbeat(deploymentName: string): Promise<void> {
       body: JSON.stringify({ deploymentName }),
     })
   } catch {
-    // silent — a missed beat is non-fatal
+    // silent - a missed beat is non-fatal
   }
 }

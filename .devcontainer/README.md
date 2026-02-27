@@ -26,7 +26,7 @@ To return to the host environment: **Dev Containers: Reopen Folder Locally**.
 ## Common tasks
 
 ```bash
-# Frontend dev server — available at http://localhost:5173
+# Frontend dev server - available at http://localhost:5173
 npm run dev
 
 # Validate Terraform (no credentials required)

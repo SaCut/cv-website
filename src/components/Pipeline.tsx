@@ -136,7 +136,7 @@ export default function Pipeline({ config, onComplete }: Props) {
     let primaryColour = '#00d4ff'
     let completelyFailed = false
 
-    // Fire sprite generation immediately — runs in parallel with fake logs
+    // Fire sprite generation immediately - runs in parallel with fake logs
     const spritePromise = generateSprite(config.creatureName, config.debugSprites)
 
     async function runPipeline() {
@@ -176,7 +176,7 @@ export default function Pipeline({ config, onComplete }: Props) {
           primaryColour = spriteResult.primaryColour
           completelyFailed = spriteResult.failed && spriteShapes.length === 0
 
-          // CF AI returned a real image — rasterise it to 64×64 pixel grid on the spot
+          // CF AI returned a real image - rasterise it to 64×64 pixel grid on the spot
           if (spriteResult.imageBase64) {
             addLogToStage(i, `> Rasterising CF AI image to 64×64 grid...`)
             baseFrame = await rasterizeImageToGrid(spriteResult.imageBase64, 64, spriteResult.bgOps)

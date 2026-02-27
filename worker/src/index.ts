@@ -1,11 +1,11 @@
 /**
- * Cloudflare Worker — 5-query pixel art generation pipeline.
+ * Cloudflare Worker - 5-query pixel art generation pipeline.
  *
- * Q1  Describe  (mini)  — constrained-vocabulary creature description
- * Q2  Structure (4o)    — description → shape primitives on 32×32 canvas
- * Q3  Colour   (mini)  — role names → hex palette
- * Q4  Motion   (mini)  — natural-language idle-animation plan
- * Q5  Animate  (mini)  — shapes + motion plan → per-shape frame deltas
+ * Q1  Describe  (mini)  - constrained-vocabulary creature description
+ * Q2  Structure (4o)    - description → shape primitives on 32×32 canvas
+ * Q3  Colour   (mini)  - role names → hex palette
+ * Q4  Motion   (mini)  - natural-language idle-animation plan
+ * Q5  Animate  (mini)  - shapes + motion plan → per-shape frame deltas
  *
  * Deploy:  cd worker && npm i && npm run deploy
  * Set GITHUB_TOKEN as a secret in the Cloudflare dashboard.
@@ -15,7 +15,7 @@ interface Env {
   GITHUB_TOKEN: string
   K3S_API_URL: string
   K3S_TOKEN: string
-  /** Cloudflare Workers AI binding (optional — gracefully absent in local dev). */
+  /** Cloudflare Workers AI binding (optional - gracefully absent in local dev). */
   AI: any
 }
 
@@ -35,7 +35,7 @@ const MODEL_TIMEOUT_MS = 28_000
    PROMPTS
    ═══════════════════════════════════════════════════════ */
 
-/** Q1 — Describe: constrained-vocabulary visual breakdown (mini). */
+/** Q1 - Describe: constrained-vocabulary visual breakdown (mini). */
 const DESCRIBE_PROMPT = `You are a visual designer for a pixel art game. Given any subject (creature, object, building, or scene), describe its visual appearance as a side-view sprite using ONLY this design vocabulary.
 
 SHAPES: circle, oval, thin rectangle, squat rectangle, wide rectangle, tall rectangle, square, triangle, rhombus, pointed spike, line, dot
@@ -46,19 +46,19 @@ POSITIONS: centered, above X, below X, left of X, right of X, around X, on top o
 Rules:
 - SIDE VIEW or best viewing angle for this subject
 - Break down into 6-12 component parts
-- Be specific — what makes THIS subject instantly recognizable?
+- Be specific - what makes THIS subject instantly recognizable?
 - Use TRIANGULAR shapes for ALL pointed/sharp features (spikes, peaks, edges, tips, blades, corners, thorns)
 - Order from largest elements to smallest details
 
 Output ONLY this JSON:
 {"parts":["one large oval as the body, centered","two small triangles as ears, on top of the body",...]}`
 
-/** Q2 — Structure: vocabulary description → geometric shape primitives (gpt-4o).
+/** Q2 - Structure: vocabulary description → geometric shape primitives (gpt-4o).
  *  This prompt now also contains the design vocabulary so that if Q1 is skipped
  *  or fails, the raw prompt alone is still enough context. */
 const STRUCTURE_PROMPT = `You are a pixel artist. Given a subject and an optional natural-language description, produce geometric shape primitives on a 32×32 canvas.
 
-STEP 1 — THINK (internally, don't output this):
+STEP 1 - THINK (internally, don't output this):
 Break the subject into 6-12 visual parts using this vocabulary:
   SHAPES: circle, oval, thin rect, squat rect, wide rect, tall rect, square, triangle, rhombus, spike, line, dot
   SIZES: tiny (1-2px), small (3-5px), medium (6-10px), large (11-16px), huge (17-24px)
@@ -66,8 +66,8 @@ Break the subject into 6-12 visual parts using this vocabulary:
   POSITIONS: centered, above X, below X, left of X, right of X, around X, on top of X, at the tip of X, flanking X, inside X, behind X
 Ask: what POINTED features define this subject? Those MUST be triangles.
 
-STEP 2 — OUTPUT shapes on a 32×32 canvas. (0,0) = top-left. X right, Y down.
-Shapes paint in order — later shapes overwrite earlier pixels (painter's algorithm).
+STEP 2 - OUTPUT shapes on a 32×32 canvas. (0,0) = top-left. X right, Y down.
+Shapes paint in order - later shapes overwrite earlier pixels (painter's algorithm).
 
 Available shapes:
 • rect:     {"type":"rect","x":N,"y":N,"w":N,"h":N,"role":"body"}
@@ -80,33 +80,33 @@ Output ONLY this JSON:
 {"roles":["outline","body",...],"shapes":[...]}
 
 COMPOSITION ORDER:
-1. OUTLINE: Full silhouette in "outline" role — 1-2px bigger than body fill.
+1. OUTLINE: Full silhouette in "outline" role - 1-2px bigger than body fill.
 2. BODY FILL: Main shape using "body" role, painted on top of outline.
-3. COLOUR ZONES: belly, patches, accent areas — overlapping fills.
+3. COLOUR ZONES: belly, patches, accent areas - overlapping fills.
 4. APPENDAGES: Limbs, fins, wings, tail, horns. Use TRIANGLES for ALL pointed features.
 5. FACE: eye_white (small rect), pupil (1px), mouth.
-6. TEXTURE: Spots, stripes, scales — pixels or small shapes.
+6. TEXTURE: Spots, stripes, scales - pixels or small shapes.
 
-Example — turtle (16 shapes):
+Example - turtle (16 shapes):
 {"roles":["outline","shell","shell_light","skin","eye_white","pupil"],"shapes":[{"type":"ellipse","cx":15,"cy":17,"rx":10,"ry":7,"role":"outline"},{"type":"ellipse","cx":15,"cy":17,"rx":9,"ry":6,"role":"shell"},{"type":"ellipse","cx":15,"cy":15,"rx":7,"ry":4,"role":"shell_light"},{"type":"ellipse","cx":24,"cy":16,"rx":4,"ry":3,"role":"outline"},{"type":"ellipse","cx":24,"cy":16,"rx":3,"ry":2,"role":"skin"},{"type":"rect","x":27,"y":15,"w":3,"h":2,"role":"skin"},{"type":"triangle","points":[[5,20],[8,15],[8,21]],"role":"shell"},{"type":"triangle","points":[[4,19],[5,17],[6,21]],"role":"shell_light"},{"type":"rect","x":10,"y":22,"w":3,"h":4,"role":"outline"},{"type":"rect","x":10,"y":22,"w":2,"h":3,"role":"skin"},{"type":"rect","x":19,"y":22,"w":3,"h":4,"role":"outline"},{"type":"rect","x":19,"y":22,"w":2,"h":3,"role":"skin"},{"type":"pixels","coords":[[26,15],[27,15]],"role":"eye_white"},{"type":"pixels","coords":[[27,16]],"role":"pupil"},{"type":"ellipse","cx":15,"cy":18,"rx":4,"ry":2,"role":"shell_light"},{"type":"pixels","coords":[[12,18],[18,18],[15,20]],"role":"shell"}]}
 
-Example — sword (15 shapes):
+Example - sword (15 shapes):
 {"roles":["blade_outline","blade","blade_shine","hilt","guard","guard_dark","pommel","grip"],"shapes":[{"type":"rect","x":20,"y":8,"w":10,"h":2,"role":"blade_outline"},{"type":"rect","x":20,"y":9,"w":9,"h":1,"role":"blade"},{"type":"triangle","points":[[30,8],[32,10],[30,11]],"role":"blade_outline"},{"type":"triangle","points":[[30,9],[31,10],[30,10]],"role":"blade"},{"type":"pixels","coords":[[22,9],[24,9]],"role":"blade_shine"},{"type":"rect","x":14,"y":6,"w":7,"h":6,"role":"guard"},{"type":"rect","x":14,"y":7,"w":6,"h":4,"role":"guard_dark"},{"type":"rect","x":8,"y":8,"w":6,"h":3,"role":"grip"},{"type":"ellipse","cx":6,"cy":10,"rx":2,"ry":2,"role":"pommel"}]}
 
-Example — floating island (22 shapes):
+Example - floating island (22 shapes):
 {"roles":["outline","landmass","grass","rock","rock_dark","waterfall","tree_trunk","tree_leaves","cloud"],"shapes":[{"type":"ellipse","cx":16,"cy":18,"rx":12,"ry":8,"role":"outline"},{"type":"ellipse","cx":16,"cy":18,"rx":11,"ry":7,"role":"rock"},{"type":"ellipse","cx":16,"cy":12,"rx":10,"ry":4,"role":"grass"},{"type":"rect","x":10,"y":19,"w":3,"h":2,"role":"rock_dark"},{"type":"rect","x":20,"y":20,"w":2,"h":2,"role":"rock_dark"},{"type":"rect","x":4,"y":20,"w":1,"h":8,"role":"waterfall"},{"type":"rect","x":5,"y":22,"w":1,"h":6,"role":"waterfall"},{"type":"rect","x":11,"y":10,"w":2,"h":4,"role":"tree_trunk"},{"type":"triangle","points":[[12,6],[8,10],[16,10]],"role":"tree_leaves"},{"type":"rect","x":19,"y":9,"w":2,"h":5,"role":"tree_trunk"},{"type":"triangle","points":[[20,5],[17,9],[23,9]],"role":"tree_leaves"},{"type":"ellipse","cx":8,"cy":6,"rx":3,"ry":2,"role":"cloud"},{"type":"ellipse","cx":24,"cy":8,"rx":4,"ry":2,"role":"cloud"}]}
 
-Example — potion bottle (18 shapes):
+Example - potion bottle (18 shapes):
 {"roles":["outline","glass","liquid","liquid_dark","bubbles","cork","label","shine"],"shapes":[{"type":"rect","x":12,"y":6,"w":8,"h":3,"role":"outline"},{"type":"rect","x":13,"y":6,"w":6,"h":2,"role":"cork"},{"type":"rect","x":10,"y":9,"w":12,"h":14,"role":"outline"},{"type":"rect","x":11,"y":10,"w":10,"h":12,"role":"glass"},{"type":"rect","x":12,"y":16,"w":8,"h":6,"role":"liquid"},{"type":"rect","x":12,"y":20,"w":8,"h":2,"role":"liquid_dark"},{"type":"pixels","coords":[[14,17],[16,18],[15,19]],"role":"bubbles"},{"type":"rect","x":13,"y":13,"w":6,"h":2,"role":"label"},{"type":"pixels","coords":[[12,11],[13,11]],"role":"shine"}]}
 
 Rules:
-- Side view facing right — asymmetric silhouette, NOT a circle or diamond
+- Side view facing right - asymmetric silhouette, NOT a circle or diamond
 - 20-28px tall, roughly centred on canvas
-- 25-45 shapes — more shapes = more detail = more recognizable
-- Use TRIANGLES for ALL pointed features — this is what makes creatures recognizable
+- 25-45 shapes - more shapes = more detail = more recognizable
+- Use TRIANGLES for ALL pointed features - this is what makes creatures recognizable
 - At least 3-5 triangles for pointed features`
 
-/** Q3 — Colour: role names → hex palette (mini). */
+/** Q3 - Colour: role names → hex palette (mini). */
 const COLOR_PROMPT = `You are a creature colour designer. Given a subject name and a list of body-part roles, assign a hex colour to each role.
 
 Rules:
@@ -115,12 +115,12 @@ Rules:
 - "outline" or similar edge roles: very dark (#1a-#3a range)
 - "eye_white" or highlight roles: bright (#ddd-#fff range)
 - "pupil": near black
-- Be specific — not generic: a pufferfish is sandy yellow, not plain orange; a dragon is rich green or crimson, not grey; a floating island is mossy green with grey stone, not blue; a sword blade is steel grey with bright highlights, not dull brown
+- Be specific - not generic: a pufferfish is sandy yellow, not plain orange; a dragon is rich green or crimson, not grey; a floating island is mossy green with grey stone, not blue; a sword blade is steel grey with bright highlights, not dull brown
 
 Output ONLY this JSON:
 {"colors":{"role_name":"#hex",...},"primaryColour":"#hex"}`
 
-/** Q4 — Motion: natural-language idle-animation plan (mini). */
+/** Q4 - Motion: natural-language idle-animation plan (mini). */
 const MOTION_PROMPT = `You describe how creatures and objects move in subtle idle animation. Given a subject and its visual description, specify which body parts move and how.
 
 Movement types:
@@ -138,7 +138,7 @@ Rules:
 Output ONLY this JSON:
 {"motions":["tail: sway","wings: flap","antennae: bob",...]}`
 
-/** Q5 — Animate: shapes + motion plan → per-shape frame deltas (mini). */
+/** Q5 - Animate: shapes + motion plan → per-shape frame deltas (mini). */
 const ANIMATE_PROMPT = `You are an animation engineer. Given a list of geometric shapes and a motion plan, assign 3 frames of pixel offsets (dx, dy) to each shape that should move.
 
 Offset guidelines per motion type:
@@ -167,7 +167,7 @@ Typical 32×32 sprite layouts:
 - Head: top of body, ~6-10px wide
 - Tail: extends left from body, ~4-8px long
 - Wings: above/beside body on the right, ~6-10px
-- Legs: below body — usually stay STILL
+- Legs: below body - usually stay STILL
 - Fins/tentacles: around body edges
 
 Movement types (pick what fits the creature):
@@ -289,11 +289,11 @@ async function callLLM(
 
 const BG_OPS_PROMPT = `You are a background-removal planner for pixel art sprites. Given a generated sticker image, you must FIRST decide whether the output is an isolated subject, then plan its background removal.
 
-Step 1 — Quality gate:
+Step 1 - Quality gate:
 If the image shows a tiled pattern, a busy scene, or multiple repeated subjects instead of ONE centred isolated subject, output: {"retry":true}
 This tells the pipeline to regenerate with a stronger prompt. Do NOT try to plan bg removal for a bad image.
 
-Step 2 — If the image IS a single isolated subject, output an ordered list of atomic mask operations to separate subject from background.
+Step 2 - If the image IS a single isolated subject, output an ordered list of atomic mask operations to separate subject from background.
 
 Every operation writes to a single binary mask (0 = keep, 1 = remove).
 
@@ -398,7 +398,7 @@ function setPixel(
 
 /**
  * Convert an ordered list of shape primitives into a pixel grid.
- * Shapes paint in order — later shapes overwrite earlier ones (painter's algorithm).
+ * Shapes paint in order - later shapes overwrite earlier ones (painter's algorithm).
  */
 function rasterizeShapes(
   palette: Record<string, string>,
@@ -662,7 +662,7 @@ export default {
                 attempt < MAX_ATTEMPTS - 1
               ) {
                 console.log(
-                  `Vision model requested retry for "${prompt}" — regenerating.`,
+                  `Vision model requested retry for "${prompt}" - regenerating.`,
                 )
                 continue
               }
@@ -719,7 +719,7 @@ export default {
           ? (descResult.parsed.parts as string[]).join("\n")
           : prompt
 
-        console.log(`Q1 done — ${description.length} chars`)
+        console.log(`Q1 done - ${description.length} chars`)
 
         if (!structResult) {
           return Response.json(
@@ -750,7 +750,7 @@ export default {
             ? usedRoles
             : roles || ["outline", "body", "accent"]
 
-        // Q3: Colour — role list → hex palette (mini)
+        // Q3: Colour - role list → hex palette (mini)
         console.log(`Q3 colour: ${roleList.length} roles...`)
         const colorResult = await callLLM(
           COLOR_PROMPT,
@@ -769,7 +769,7 @@ export default {
             colorResult.parsed.primaryColor ||
             primaryColour
         } else {
-          console.warn("Q3 colour failed — using fallback palette")
+          console.warn("Q3 colour failed - using fallback palette")
           const fallbackHues = [
             "#2a2a2a",
             "#5a8a5a",
@@ -893,7 +893,7 @@ export default {
         const subject = name || "creature"
         const desc = description || subject
 
-        // Q4: Motion — idle animation plan (mini)
+        // Q4: Motion - idle animation plan (mini)
         console.log(`Q4 motion plan for "${subject}"...`)
         const motionResult = await callLLM(
           MOTION_PROMPT,
@@ -909,7 +909,7 @@ export default {
           motions.some((m: string) => m.toLowerCase().includes("static"))
 
         if (isStatic) {
-          console.log("Q4: subject is static — no animation")
+          console.log("Q4: subject is static - no animation")
           const base = rasterizeShapes(palette, shapes)
           return Response.json(
             { frames: [base, base, base], model: "static" },
@@ -917,7 +917,7 @@ export default {
           )
         }
 
-        // Q5: Animate — shapes + motion plan → per-shape deltas (mini)
+        // Q5: Animate - shapes + motion plan → per-shape deltas (mini)
         console.log(`Q5 animate: ${motions.length} moving parts...`)
         const shapeSummary = summarizeShapes(shapes)
         const animResult = await callLLM(
@@ -932,7 +932,7 @@ export default {
           !animResult?.parsed?.animated ||
           !Array.isArray(animResult.parsed.animated)
         ) {
-          console.warn("Q5 failed — returning static frames")
+          console.warn("Q5 failed - returning static frames")
           const base = rasterizeShapes(palette, shapes)
           return Response.json(
             { frames: [base, base, base], model: "static-fallback" },
@@ -973,7 +973,7 @@ export default {
           { status: 400, headers: CORS },
         )
       }
-      // Piggyback cleanup as a background task — doesn't add latency
+      // Piggyback cleanup as a background task - doesn't add latency
       ctx.waitUntil(cleanupOldDeployments(env))
       return handleCreaturePods(deployment, env)
     }
@@ -1017,7 +1017,7 @@ export default {
       return handlePodRestart(podName, env)
     }
 
-    // -- Endpoint 8: Heartbeat — resets the TTL for a deployment --
+    // -- Endpoint 8: Heartbeat - resets the TTL for a deployment --
     if (request.method === "POST" && url.pathname === "/k8s/heartbeat") {
       try {
         const body = (await request.json()) as any
@@ -1129,7 +1129,7 @@ async function cleanupOldDeployments(env: Env): Promise<void> {
   }
 }
 
-/** POST /k8s/deploy — create a creature deployment. */
+/** POST /k8s/deploy - create a creature deployment. */
 async function handleCreatureDeploy(
   request: Request,
   env: Env,
@@ -1158,7 +1158,7 @@ async function handleCreatureDeploy(
     if (podCount + replicas > MAX_PODS_IN_NAMESPACE) {
       return Response.json(
         {
-          error: `Cluster is busy — ${podCount} pods running. Try fewer replicas or wait.`,
+          error: `Cluster is busy - ${podCount} pods running. Try fewer replicas or wait.`,
         },
         { status: 429, headers: CORS },
       )
@@ -1249,7 +1249,7 @@ async function handleCreatureDeploy(
   }
 }
 
-/** GET /k8s/pods?deployment=<name> — list pods for a creature deployment. */
+/** GET /k8s/pods?deployment=<name> - list pods for a creature deployment. */
 async function handleCreaturePods(
   deployment: string,
   env: Env,
@@ -1309,7 +1309,7 @@ async function handleCreaturePods(
   }
 }
 
-/** GET /k8s/pod-metrics?deployment=<name> — real CPU/mem from metrics-server. */
+/** GET /k8s/pod-metrics?deployment=<name> - real CPU/mem from metrics-server. */
 async function handlePodMetrics(
   deployment: string,
   env: Env,
@@ -1342,7 +1342,7 @@ async function handlePodMetrics(
   }
 }
 
-/** DELETE /k8s/pods/:podName — delete a single pod so the ReplicaSet respawns it. */
+/** DELETE /k8s/pods/:podName - delete a single pod so the ReplicaSet respawns it. */
 async function handlePodRestart(podName: string, env: Env): Promise<Response> {
   try {
     const res = await k8sFetch(
@@ -1366,7 +1366,7 @@ async function handlePodRestart(podName: string, env: Env): Promise<Response> {
   }
 }
 
-/** DELETE /k8s/deploy/:name — tear down a creature deployment. */
+/** DELETE /k8s/deploy/:name - tear down a creature deployment. */
 async function handleCreatureTeardown(
   name: string,
   env: Env,

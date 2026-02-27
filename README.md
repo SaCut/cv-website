@@ -4,7 +4,7 @@
 
 **Live:** [saveriocutrupi.com](https://saveriocutrupi.com)
 
-A platform engineering portfolio built on infrastructure I own and operate: a Terraform-provisioned Oracle Cloud VM running k3s, fronted by a Cloudflare Tunnel, with scoped RBAC and a Cloudflare Worker proxying all k8s API calls — at £0/month.
+A platform engineering portfolio built on infrastructure I own and operate: a Terraform-provisioned Oracle Cloud VM running k3s, fronted by a Cloudflare Tunnel, with scoped RBAC and a Cloudflare Worker proxying all k8s API calls - at £0/month.
 
 The interactive surface is a pixel creature generator. Clicking "Deploy" on the site creates a real Kubernetes deployment in the `creatures` namespace, with live pod metrics, restart controls, and a 10-minute TTL before automatic cleanup.
 
@@ -14,15 +14,15 @@ The interactive surface is a pixel creature generator. Clicking "Deploy" on the 
 
 ```mermaid
 flowchart TD
-    Browser["Visitor's browser<br/>React SPA — saveriocutrupi.com"]
+    Browser["Visitor's browser<br/>React SPA - saveriocutrupi.com"]
 
     subgraph CF ["Cloudflare"]
-        Worker["Cloudflare Worker — pipeline-cv-worker<br/>─────────────────────────────<br/>AI Gateway → OpenAI / CF AI<br/>k3s REST API proxy"]
+        Worker["Cloudflare Worker - pipeline-cv-worker<br/>─────────────────────────────<br/>AI Gateway → OpenAI / CF AI<br/>k3s REST API proxy"]
         Tunnel["Cloudflare Tunnel<br/>k3s.saveriocutrupi.com"]
     end
 
     subgraph OCI ["Oracle Cloud Free Tier VM"]
-        k3s["k3s v1.34<br/>namespace: creatures<br/>busybox pods — 10 min TTL"]
+        k3s["k3s v1.34<br/>namespace: creatures<br/>busybox pods - 10 min TTL"]
     end
 
     subgraph CICD ["CI/CD"]
@@ -59,9 +59,9 @@ flowchart TD
 
 **Creature deployment:** When a visitor runs the pipeline, the browser calls the Cloudflare Worker, which authenticates against the k3s API through a Cloudflare Tunnel using a scoped service account token. A real `Deployment` is created in the `creatures` namespace. The UI polls every 4 seconds for live pod status, every 10 seconds for real CPU/memory metrics from metrics-server, and shows a **LIVE** badge once pods are running. Visitors can restart individual pods (the ReplicaSet respawns them instantly) or relaunch the whole deployment.
 
-**Orphan prevention:** Three-layer strategy — (1) a Cloudflare Worker cron fires every 10 minutes unconditionally to purge TTL-expired deployments; (2) every pod-status poll piggybacks a background cleanup via `ctx.waitUntil`; (3) the frontend detects a gone deployment (`exists: false` from k8s 404) and auto-resets, clearing sessionStorage.
+**Orphan prevention:** Three-layer strategy - (1) a Cloudflare Worker cron fires every 10 minutes unconditionally to purge TTL-expired deployments; (2) every pod-status poll piggybacks a background cleanup via `ctx.waitUntil`; (3) the frontend detects a gone deployment (`exists: false` from k8s 404) and auto-resets, clearing sessionStorage.
 
-**Cost:** £0/month — Oracle Cloud free tier VM, Cloudflare Workers free tier, GitHub Pages.
+**Cost:** £0/month - Oracle Cloud free tier VM, Cloudflare Workers free tier, GitHub Pages.
 
 ---
 
@@ -69,7 +69,7 @@ flowchart TD
 
 | Resource                                  | Cost         |
 | ----------------------------------------- | ------------ |
-| Oracle Cloud VM (free tier — always free) | £0           |
+| Oracle Cloud VM (free tier - always free) | £0           |
 | Cloudflare Workers + Tunnel (free tier)   | £0           |
 | GitHub Actions + Pages                    | £0           |
 | Terraform                                 | £0           |
@@ -103,7 +103,7 @@ src/                  React frontend (TypeScript, React)
 | VM         | Oracle Cloud `VM.Standard.E5.Flex`, 1 OCPU / 12 GB, Ubuntu 24.04, uk-london-1              |
 | Kubernetes | k3s v1.34.4 + metrics-server (patched `--kubelet-insecure-tls`)                            |
 | Tunnel     | `cloudflared` v2026.2.0, systemd service, routes `k3s.saveriocutrupi.com → localhost:6443` |
-| Worker     | `pipeline-cv-worker.xartab-mail-flare.workers.dev` — cron every 10 min (orphan cleanup)    |
+| Worker     | `pipeline-cv-worker.xartab-mail-flare.workers.dev` - cron every 10 min (orphan cleanup)    |
 | RBAC       | SA `creature-manager`, Role scoped to `creatures`: apps/pods/metrics.k8s.io                |
 
 ---

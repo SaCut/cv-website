@@ -1,4 +1,4 @@
-# cv-website — Copilot workspace instructions
+# cv-website - Copilot workspace instructions
 
 ## ! Git Operations
 

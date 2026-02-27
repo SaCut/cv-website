@@ -1,4 +1,4 @@
-# Improvement Plan — saveriocutrupi.com
+# Improvement Plan - saveriocutrupi.com
 
 Source: conversation with Claude (saved in `_chat_with_ideas/`).  
 Goal: turn the existing visual demo into a real, provable senior platform engineering portfolio at £0/month.
@@ -7,27 +7,27 @@ ArgoCD has been dropped from the plan. It adds significant complexity (RAM, conf
 
 ---
 
-## Manual steps (account / external setup — can't be automated)
+## Manual steps (account / external setup - can't be automated)
 
-- [x] **Create a cloud account** — Oracle Cloud. 2 AMD VMs, 2 vCPU, 12 GB RAM each, free forever.
-- [x] **Provision the VM** via the provider's web console — public IP: `143.47.255.170`.
+- [x] **Create a cloud account** - Oracle Cloud. 2 AMD VMs, 2 vCPU, 12 GB RAM each, free forever.
+- [x] **Provision the VM** via the provider's web console - public IP: `143.47.255.170`.
 - [x] **Open firewall rules** for ports 6443 (k3s API), 80, 443.
-- [x] **SSH into the VM and install k3s** — k3s v1.34.4 installed and running. `KUBECONFIG` and `SSH_PRIVATE_KEY` saved as GitHub Actions secrets.
+- [x] **SSH into the VM and install k3s** - k3s v1.34.4 installed and running. `KUBECONFIG` and `SSH_PRIVATE_KEY` saved as GitHub Actions secrets.
 
 ---
 
-## Phase 1 — Real infrastructure with Terraform (2–3 weekends)
+## Phase 1 - Real infrastructure with Terraform (2–3 weekends)
 
 Goal: the repo contains actual IaC that provisions the VM, not just documentation.
 
 - [x] Create a `terraform/` folder in the repo.
 - [x] Write provider config, VM definition, network/firewall rules (`provider.tf`, `main.tf`, `variables.tf`).
 - [x] Add a `terraform/README.md` explaining how to init and apply.
-- [ ] Commit — this puts real IaC on the public repo, visible to reviewers.
+- [ ] Commit - this puts real IaC on the public repo, visible to reviewers.
 
 ---
 
-## Phase 2 — CI/CD pipeline with real container deploy (1 weekend)
+## Phase 2 - CI/CD pipeline with real container deploy (1 weekend)
 
 Goal: GitHub Actions builds an image, pushes it to a registry, and rolls it out to k3s. No extra tools needed.
 
@@ -41,9 +41,9 @@ Goal: GitHub Actions builds an image, pushes it to a registry, and rolls it out 
 
 ---
 
-## Phase 3 — Live infrastructure panel on the site (1 weekend)
+## Phase 3 - Live infrastructure panel on the site (1 weekend)
 
-Goal: a small panel visible to all visitors showing real cluster state — "Running on k3s · pod uptime 4d 3h · last deploy 2 min ago."
+Goal: a small panel visible to all visitors showing real cluster state - "Running on k3s · pod uptime 4d 3h · last deploy 2 min ago."
 
 - [x] Extend the existing Cloudflare Worker (`worker/src/index.ts`) to proxy a read-only subset of the k3s REST API: pod status, uptime, last deploy timestamp.
 - [x] Add a `LiveInfraPanel` React component to the CV page that fetches from the Worker.
@@ -52,7 +52,7 @@ Goal: a small panel visible to all visitors showing real cluster state — "Runn
 
 ---
 
-## Phase 4 — Wire creature deployment to real Kubernetes (1–2 weekends)
+## Phase 4 - Wire creature deployment to real Kubernetes (1–2 weekends)
 
 Goal: the "deploy a creature to a pod" UI flow creates a real, short-lived Kubernetes pod.
 
@@ -63,7 +63,7 @@ Goal: the "deploy a creature to a pod" UI flow creates a real, short-lived Kuber
 
 ---
 
-## Phase 5 — README and polish (1 evening)
+## Phase 5 - README and polish (1 evening)
 
 Goal: the first thing a technical reviewer sees is a clear architecture diagram and status badges.
 

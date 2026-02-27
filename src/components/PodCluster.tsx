@@ -53,18 +53,18 @@ const IDLE_LOG_FNS: LogFn[] = [
   () => `[main] processing queue: ${r(0, 6)} items pending`,
   () => `[main] cache eviction freed ${r(4, 28)}MB`,
   // warn
-  () => `[warn] upstream service timeout — retry ${r(1, 3)}/3`,
+  () => `[warn] upstream service timeout - retry ${r(1, 3)}/3`,
   () => `[warn] slow query detected: ${r(200, 1100)}ms`,
   () => `[warn] redis reconnect in progress`,
   () => `[warn] disk at ${r(70, 90)}% capacity`,
   () => `[warn] certificate expires in ${r(1, 45)} days`,
   () => `[warn] client on deprecated endpoint. notified. still using it.`,
-  () => `[warn] elevated traffic — monitoring`,
+  () => `[warn] elevated traffic - monitoring`,
   () => `[warn] DNS lookup: ${r(500, 1100)}ms`,
   () => `[warn] graceful shutdown signal received. queued.`,
   () => `[warn] malformed request dropped`,
   () => `[warn] rate limit: ${r(88, 99)}/100`,
-  () => `[warn] health check missed — likely network jitter`,
+  () => `[warn] health check missed - likely network jitter`,
 ]
 
 function shuffle<T>(arr: T[]): T[] {
@@ -82,7 +82,7 @@ function usePodLogs(creatureName: string) {
   const intervalRef = useRef<ReturnType<typeof setInterval>>()
   const startupDoneRef = useRef(false)
 
-  // Startup logs — fire exactly once per component mount
+  // Startup logs - fire exactly once per component mount
   useEffect(() => {
     if (startupDoneRef.current) return
     startupDoneRef.current = true
@@ -99,7 +99,7 @@ function usePodLogs(creatureName: string) {
     })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Idle deck — set up once on mount
+  // Idle deck - set up once on mount
   useEffect(() => {
     deckRef.current = shuffle(IDLE_LOG_FNS)
     intervalRef.current = setInterval(
@@ -174,7 +174,7 @@ function TerminalPod({
   // stable random phase offset so pods animate differently
   const phaseOffset = useMemo(() => Math.random() * 20, [])
 
-  // stable fake cpu/mem — shown only when real metrics are unavailable
+  // stable fake cpu/mem - shown only when real metrics are unavailable
   const fallbackMetrics = useMemo(
     () => ({
       cpu: `${Math.floor(Math.random() * 40 + 10)}m`,
@@ -183,7 +183,7 @@ function TerminalPod({
     [],
   )
 
-  // Live age — ticks every second when we have a real start time
+  // Live age - ticks every second when we have a real start time
   const [age, setAge] = useState(() => {
     if (!realPod?.started) return `${index + 1}s`
     const e = Math.floor((Date.now() - new Date(realPod.started).getTime()) / 1000)
@@ -305,7 +305,7 @@ export default function PodCluster({ creature, config, onReset, onRelaunch }: Pr
     async function poll() {
       const result = await getCreaturePods(creature.deploymentName!)
       if (!active) return
-      // If k8s confirmed 404 (not a network error), the deployment is gone — clean up
+      // If k8s confirmed 404 (not a network error), the deployment is gone - clean up
       if (!result.exists && !result.error) {
         onReset()
         return
@@ -347,7 +347,7 @@ export default function PodCluster({ creature, config, onReset, onRelaunch }: Pr
     }
   }, [creature.deploymentName])
 
-  // Heartbeat — ping worker every 2 min while tab is visible so TTL resets
+  // Heartbeat - ping worker every 2 min while tab is visible so TTL resets
   useEffect(() => {
     if (!creature.deploymentName) return
     const name = creature.deploymentName
@@ -382,7 +382,7 @@ export default function PodCluster({ creature, config, onReset, onRelaunch }: Pr
 
   const handleRestartPod = useCallback(async (podName: string) => {
     await restartPod(podName)
-    // optimistically clear that pod from list — it'll repopulate on next poll
+    // optimistically clear that pod from list - it'll repopulate on next poll
     setRealPods(prev => prev.filter(p => p.name !== podName))
   }, [])
 

@@ -7,15 +7,15 @@
   "initializeCommand": "sh .devcontainer/check-docker.sh",
 
   "features": {
-    // Node.js — matches the app's runtime
+    // Node.js - matches the app's runtime
     "ghcr.io/devcontainers/features/node:1": {
       "version": "lts"
     },
-    // Terraform — for IaC work without polluting the host
+    // Terraform - for IaC work without polluting the host
     "ghcr.io/devcontainers/features/terraform:1": {
       "version": "latest"
     },
-    // kubectl — for direct cluster access
+    // kubectl - for direct cluster access
     "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
       "version": "latest",
       "helm": "none",

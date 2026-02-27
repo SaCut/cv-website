@@ -46,7 +46,7 @@
   --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   --shadow-pop: 0 8px 30px rgba(129, 140, 248, 0.15);
 
-  /* terminal palette (invariant — always on dark bg) */
+  /* terminal palette (invariant - always on dark bg) */
   --text-term: #94a3b8;
   --term-text: #e2e8f0;
   --term-green: #4ade80;
@@ -1514,7 +1514,7 @@ a:hover {
   margin-bottom: 0.35rem;
 }
 
-/* (cv-section-head removed — sprites now in illustrated-section layout) */
+/* (cv-section-head removed - sprites now in illustrated-section layout) */
 
 /* ── tiered skills ─── */
 

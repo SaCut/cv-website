@@ -9,7 +9,7 @@ type Frame = (string | null)[][]
 export interface CVSpriteData {
   label: string
   frames: Frame[]
-  /** ms per frame — lower = faster */
+  /** ms per frame - lower = faster */
   interval: number
 }
 
@@ -17,7 +17,7 @@ const _ = null
 
 /* ── colour shorthand helpers ───────────────────── */
 
-/* ── 1. MONITOR — About section ─────────────────── */
+/* ── 1. MONITOR - About section ─────────────────── */
 /* A terminal monitor with a blinking cursor and scrolling lines */
 
 const MON_BODY = '#3a3a4a'
@@ -87,7 +87,7 @@ const monitorF3: Frame = [
   [_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _],
 ]
 
-/* ── 2. WRENCH & NUT — Skills section ───────────── */
+/* ── 2. WRENCH & NUT - Skills section ───────────── */
 /* Top-down: open-end wrench curving around a hex nut       */
 /* Handle rocks ±1 px around nut centre (the fulcrum)       */
 
@@ -98,7 +98,7 @@ const C4 = '#64748b'   // chrome shadow
 const C5 = '#374151'   // dark edge
 const C6 = '#000000'   // bolt hole
 
-// Frame 1 — centre position (hand-drawn reference)
+// Frame 1 - centre position (hand-drawn reference)
 const gearsF1: Frame = [
   [ _, _, _, _, _, C1, C1, C1, C1, _, _, _, _, _, _, _],
   [ _, _, _, C1, C1, C2, C2, C2, C3, _, _, _, _, _, _, _],
@@ -118,7 +118,7 @@ const gearsF1: Frame = [
   [ _, _, C3, C4, C4, C5, C5, _, _, _, _, _, _, _, _, _],
 ]
 
-// Frame 2 — nut face highlight rotated (wrench stays still)
+// Frame 2 - nut face highlight rotated (wrench stays still)
 const gearsF2: Frame = [
   [ _, _, _, _, _, C1, C1, C1, C1, _, _, _, _, _, _, _],
   [ _, _, _, C1, C1, C2, C2, C2, C3, _, _, _, _, _, _, _],
@@ -138,7 +138,7 @@ const gearsF2: Frame = [
   [ _, _, C3, C4, C4, C5, C5, _, _, _, _, _, _, _, _, _],
 ]
 
-// Frame 3 — same as frame 1 (back-and-forth nut rotation)
+// Frame 3 - same as frame 1 (back-and-forth nut rotation)
 const gearsF3: Frame = [
   [ _, _, _, _, _, C1, C1, C1, C1, _, _, _, _, _, _, _],
   [ _, _, _, C1, C1, C2, C2, C2, C3, _, _, _, _, _, _, _],
@@ -159,7 +159,7 @@ const gearsF3: Frame = [
 ]
 
 
-/* ── 3. SERVER RACK — Experience section ────────── */
+/* ── 3. SERVER RACK - Experience section ────────── */
 /* Rack with blinking status lights */
 
 const RK_FRAME = '#4a4a5a'
@@ -231,7 +231,7 @@ const rackF3: Frame = [
 ]
 
 
-/* ── 4. FLASK + BUBBLES — Projects section ──────── */
+/* ── 4. FLASK + BUBBLES - Projects section ──────── */
 /* Erlenmeyer flask with rising bubbles */
 
 const FL_GLASS = '#b8c4d0'
@@ -300,7 +300,7 @@ const flaskF3: Frame = [
 ]
 
 
-/* ── 5. SCROLL — Education section ──────────────── */
+/* ── 5. SCROLL - Education section ──────────────── */
 /* An unrolled diploma/scroll */
 
 const SC_PAPER = '#f5e6c8'
@@ -372,7 +372,7 @@ const scrollF3: Frame = [
 ]
 
 
-/* ── 6. QUOTE MARKS — Manager quotes section ───── */
+/* ── 6. QUOTE MARKS - Manager quotes section ───── */
 /* Large quotation marks that pulse */
 
 const QT_MARK = '#7c3aed'

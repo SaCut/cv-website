@@ -6125,7 +6125,7 @@ var require_react_reconciler_development = __commonJS({
                     knownKeys.add(key);
                     break;
                   }
-                  error2("Encountered two children with the same key, `%s`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.", key);
+                  error2("Encountered two children with the same key, `%s`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted - the behavior is unsupported and could change in a future version.", key);
                   break;
                 case REACT_LAZY_TYPE: {
                   var payload = child._payload;
@@ -9584,7 +9584,7 @@ var require_react_reconciler_development = __commonJS({
               if (current2 !== null) {
                 var _prevState2 = current2.memoizedState;
                 var prevIsHidden = _prevState2 !== null;
-                if (prevIsHidden !== nextIsHidden && // LegacyHidden doesn't do any hiding — it only pre-renders.
+                if (prevIsHidden !== nextIsHidden && // LegacyHidden doesn't do any hiding - it only pre-renders.
                 !enableLegacyHidden) {
                   workInProgress2.flags |= Visibility;
                 }
@@ -10688,7 +10688,7 @@ var require_react_reconciler_development = __commonJS({
               workInProgress2,
               renderLanes2,
               // TODO: When we delete legacy mode, we should make this error argument
-              // required — every concurrent mode path that causes hydration to
+              // required - every concurrent mode path that causes hydration to
               // de-opt to client rendering should have an error message.
               null
             );

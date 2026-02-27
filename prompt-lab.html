@@ -237,7 +237,7 @@ die-cut sticker of a sleeping tiger, pure white background, isolated subject, 16
     </div>
 
     <div id="pixelize-section" class="px-section" style="display: none">
-      <h2>Pixelization — edge-preserving</h2>
+      <h2>Pixelization - edge-preserving</h2>
       <div class="row" style="align-items: flex-end">
         <div class="field">
           <label>Grid size</label>
@@ -361,7 +361,7 @@ die-cut sticker of a sleeping tiger, pure white background, isolated subject, 16
         })
       })
 
-      // Bilateral filter — used only for bg mask detection at small scale.
+      // Bilateral filter - used only for bg mask detection at small scale.
       function bilateralFilter(src, w, h, sigmaSpace, sigmaColor) {
         const out = new Uint8ClampedArray(src.length)
         const radius = Math.ceil(sigmaSpace * 2)
@@ -499,7 +499,7 @@ die-cut sticker of a sleeping tiger, pure white background, isolated subject, 16
         return mask
       }
 
-      // Unsharp mask over pixel buffer — sharpens edges before downsampling.
+      // Unsharp mask over pixel buffer - sharpens edges before downsampling.
       // amount=1.5 gives strong sharpening without haloing.
       function unsharpMask(data, w, h, amount) {
         // 3x3 box blur
@@ -615,7 +615,7 @@ die-cut sticker of a sleeping tiger, pure white background, isolated subject, 16
                       sy >= nativeSize
                     )
                       continue
-                    // skip bg pixels — removal applied on the original image
+                    // skip bg pixels - removal applied on the original image
                     if (nativeMask[sy * nativeSize + sx]) continue
                     const si = (sy * nativeSize + sx) * 4
                     if (nd[si + 3] < 128) continue

@@ -2,7 +2,7 @@
  * Debug sprite logger.
  * POSTs raw AI responses to the Vite dev server which writes them into
  * debug-sprites/ at the repo root.  In production the endpoint doesn't
- * exist so fetch fails silently — nothing ever leaks to the public build.
+ * exist so fetch fails silently - nothing ever leaks to the public build.
  */
 
 function timestamp(): string {
@@ -34,7 +34,7 @@ export async function logSpriteResponse(
 ): Promise<void> {
   const ts = timestamp()
   const name = safeName(request)
-  // Strip imageBase64 from the JSON — it's already saved as the .png.
+  // Strip imageBase64 from the JSON - it's already saved as the .png.
   const { imageBase64: _omit, ...meta } = rawResponse as Record<string, unknown>
   try {
     await fetch("/debug-log", {
