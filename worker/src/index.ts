@@ -25,6 +25,61 @@ const CORS = {
   "Access-Control-Allow-Headers": "Content-Type",
 }
 
+/* ═══════════════════════════════════════════════════════
+   MONTHLY RATE LIMITER  (Cache API - no extra bindings)
+   ═══════════════════════════════════════════════════════ */
+
+/** Max AI-consuming requests per calendar month. */
+const MONTHLY_AI_CAP = 200
+
+/** Synthetic URL used as Cache API key for the counter. */
+function rateKey(): string {
+  const d = new Date()
+  return `https://rate-internal/ai-calls/${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`
+}
+
+/** Read current month's counter from cache. Returns 0 on miss. */
+async function getMonthlyCount(): Promise<number> {
+  const cache = caches.default
+  const res = await cache.match(new Request(rateKey()))
+  if (!res) return 0
+
+  const n = Number(await res.text())
+
+  return Number.isFinite(n) ? n : 0
+}
+
+/** Increment monthly counter. Cache TTL auto-expires at ~32 days. */
+async function incrementMonthlyCount(current: number): Promise<void> {
+  const cache = caches.default
+
+  await cache.put(
+    new Request(rateKey()),
+    new Response(String(current + 1), {
+      headers: { "Cache-Control": "public, max-age=2764800" },
+    }),
+  )
+}
+
+/** Check budget and increment. Returns a 429 Response if over cap, else null. */
+async function enforceRateLimit(): Promise<Response | null> {
+  const count = await getMonthlyCount()
+
+  if (count >= MONTHLY_AI_CAP) {
+    return Response.json(
+      {
+        error: "Monthly AI budget exhausted. Sprites will use pre-built fallbacks.",
+        rateLimited: true,
+      },
+      { status: 429, headers: { ...CORS, "Retry-After": "86400" } },
+    )
+  }
+
+  await incrementMonthlyCount(count)
+
+  return null
+}
+
 const MODEL_QUEUE = ["openai/gpt-4o-mini"]
 /** Use the best available model for sprite structure. Falls back through the queue. */
 const SPRITE_MODEL = "openai/gpt-4o"
@@ -610,6 +665,9 @@ export default {
 
     // ── Endpoint 1: Generate base sprite  (Q1 → Q2 → Q3 → rasterise) ──
     if (request.method === "POST" && url.pathname === "/generate-sprite") {
+      const rateLimited = await enforceRateLimit()
+      if (rateLimited) return rateLimited
+
       try {
         const { prompt } = (await request.json()) as { prompt: string }
         if (!prompt || typeof prompt !== "string" || prompt.length > 100) {
@@ -809,6 +867,9 @@ export default {
 
     // ── Endpoint 1b: Raw image gen playground ──
     if (request.method === "POST" && url.pathname === "/raw-image") {
+      const rateLimited = await enforceRateLimit()
+      if (rateLimited) return rateLimited
+
       try {
         const body = (await request.json()) as Record<string, any>
         if (!body.prompt || typeof body.prompt !== "string") {
@@ -844,6 +905,9 @@ export default {
 
     // ── Endpoint 2: Animate sprite  (Q4 → Q5 → rasterise frames) ──
     if (request.method === "POST" && url.pathname === "/animate-sprite") {
+      const rateLimited = await enforceRateLimit()
+      if (rateLimited) return rateLimited
+
       try {
         const body = (await request.json()) as {
           palette?: Record<string, string>
@@ -1046,6 +1110,16 @@ export default {
           { status: 500, headers: CORS },
         )
       }
+    }
+
+    // -- Endpoint 9: Rate limit status --
+    if (request.method === "GET" && url.pathname === "/rate-status") {
+      const count = await getMonthlyCount()
+
+      return Response.json(
+        { used: count, cap: MONTHLY_AI_CAP, remaining: Math.max(0, MONTHLY_AI_CAP - count) },
+        { headers: { ...CORS, "Content-Type": "application/json" } },
+      )
     }
 
     return new Response("Not found", { status: 404, headers: CORS })

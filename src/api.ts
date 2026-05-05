@@ -24,6 +24,13 @@ const FALLBACK_QUIPS = [
   `The model's having a lie-down. Time to rummage through the creature archives!`,
 ]
 
+const RATE_LIMIT_QUIPS = [
+  `This site got more visitors than expected this month! Using a pre-built creature while the AI rests.`,
+  `Monthly AI budget reached - the creatures are hand-picked from the archive until next month.`,
+  `Too popular for our own good! The AI generator is taking a well-earned break until next month.`,
+  `The AI sprite factory hit its monthly quota. Archive creatures reporting for duty!`,
+]
+
 const MODEL_SWAP_QUIPS = [
   `Preferred model was busy - a backup model stepped in. Teamwork!`,
   `Primary model unavailable - another one picked up the brush. Seamless.`,
@@ -79,6 +86,8 @@ export async function generateSprite(
 
     if (!res.ok || !res.headers.get("content-type")?.includes("json")) {
       const fallback = getRandomCreature(name)
+      const isRateLimited = res.status === 429
+
       return {
         frame: fallback.frames[0],
         palette: {},
@@ -86,7 +95,7 @@ export async function generateSprite(
         description: name,
         primaryColour: fallback.primaryColour,
         failed: true,
-        notice: pickQuip(FALLBACK_QUIPS),
+        notice: pickQuip(isRateLimited ? RATE_LIMIT_QUIPS : FALLBACK_QUIPS),
       }
     }
 
@@ -179,7 +188,9 @@ export async function animateSprite(
       return {
         frames: [],
         failed: true,
-        notice: "Animation service unavailable.",
+        notice: res.status === 429
+          ? pickQuip(RATE_LIMIT_QUIPS)
+          : "Animation service unavailable.",
       }
     }
 
